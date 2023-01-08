@@ -97,9 +97,9 @@ export default function Home() {
     onFocusChange();
   };
 
-  const updateMessages = (data: any) => {
+  const updateMessages = async (data: any) => {
     if (!data.id) return;
-    fetchConversations(data.id);
+    fetchConversations(data.id, auth?.id);
     setSelectedRoom(data);
   };
 

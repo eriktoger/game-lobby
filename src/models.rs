@@ -39,3 +39,15 @@ pub struct RoomResponse {
     pub room: Room,
     pub users: Vec<User>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewRoomToUser {
+    pub room: String,
+    pub user: String,
+}
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable)]
+pub struct RoomToUser {
+    pub id: String,
+    pub room: String,
+    pub user: String,
+}

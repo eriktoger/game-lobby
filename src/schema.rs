@@ -11,6 +11,14 @@ diesel::table! {
 }
 
 diesel::table! {
+    room_to_users (id) {
+        id -> Text,
+        room -> Text,
+        user -> Text,
+    }
+}
+
+diesel::table! {
     rooms (id) {
         id -> Text,
         name -> Text,
@@ -31,6 +39,7 @@ diesel::table! {
 
 diesel::allow_tables_to_appear_in_same_query!(
     conversations,
+    room_to_users,
     rooms,
     users,
 );

@@ -1,4 +1,4 @@
-use crate::models::{Conversation, NewConversation, Room, RoomResponse, User};
+use crate::models::{Conversation, NewConversation, Room, RoomResponse, RoomToUser, User};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use std::{
@@ -120,10 +120,40 @@ pub fn get_all_rooms(conn: &mut SqliteConnection) -> Result<Vec<RoomResponse>, D
                 .get(&room.id.to_string())
                 .unwrap()
                 .into_iter()
-                .map(|id| users_map.get(id.to_owned()).unwrap().clone())
+                .filter_map(|id| users_map.get(id.to_owned()))
+                .map(|x| x.clone())
                 .collect::<Vec<_>>();
             return RoomResponse { room, users };
         })
         .collect::<Vec<_>>();
     Ok(response_rooms)
+}
+
+pub fn join_room(
+    conn: &mut SqliteConnection,
+    room_id: &str,
+    user_id: &str,
+) -> Result<RoomToUser, DbError> {
+    use crate::schema::room_to_users;
+    use crate::schema::room_to_users::dsl::*;
+    let rooms_data: Vec<RoomToUser> = room_to_users::table.get_results(conn)?;
+    let exists = rooms_data
+        .iter()
+        .find(|x| x.room == room_id && x.user == user_id);
+
+    let new_room_to_user = RoomToUser {
+        id: Uuid::new_v4().to_string(),
+        room: room_id.to_string(),
+        user: user_id.to_string(),
+    };
+    match exists {
+        Some(_) => println!("{:?}", exists),
+        None => {
+            diesel::insert_into(room_to_users)
+                .values(&new_room_to_user)
+                .execute(conn)?;
+        }
+    }
+
+    Ok(new_room_to_user)
 }

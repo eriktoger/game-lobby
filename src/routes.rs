@@ -148,3 +148,17 @@ pub async fn get_rooms(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
         Ok(res)
     }
 }
+
+#[post("/rooms/join")]
+pub async fn join_room(
+    pool: web::Data<DbPool>,
+    form: web::Json<models::NewRoomToUser>,
+) -> Result<HttpResponse, Error> {
+    let joined = web::block(move || {
+        let mut conn = pool.get()?;
+        db::join_room(&mut conn, &form.room, &form.user)
+    })
+    .await?
+    .map_err(actix_web::error::ErrorUnprocessableEntity)?;
+    Ok(HttpResponse::Ok().json(joined))
+}
