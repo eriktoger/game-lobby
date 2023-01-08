@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 export default function useWebsocket(onMessage: any) {
   const ws = useRef<any>(null);
+  console.log("Use websockets");
   useEffect(() => {
     if (ws.current !== null) return;
     const wsUri = "ws://localhost:8080/ws";
@@ -9,7 +10,8 @@ export default function useWebsocket(onMessage: any) {
     ws.current.onclose = () => console.log("ws closed");
     const wsCurrent = ws.current;
     return () => {
-      wsCurrent.close();
+      console.log("Here", wsCurrent);
+      //wsCurrent.close(); //this closed my websocket to early
     };
   }, []);
   useEffect(() => {

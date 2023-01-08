@@ -41,6 +41,7 @@ pub struct ChatServer {
 }
 impl ChatServer {
     pub fn new() -> ChatServer {
+        println!("Chat server starting...");
         let mut rooms = HashMap::new();
         rooms.insert("main".to_string(), HashSet::new());
         Self {
@@ -50,6 +51,7 @@ impl ChatServer {
         }
     }
     fn send_message(&self, room: &str, message: &str, skip_id: usize) {
+        println!("sending message {}", message);
         if let Some(sessions) = self.rooms.get(room) {
             for id in sessions {
                 if *id != skip_id {
@@ -67,6 +69,7 @@ impl Actor for ChatServer {
 impl Handler<Connect> for ChatServer {
     type Result = usize;
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
+        println!("Connect");
         let id = self.rng.gen::<usize>();
         self.sessions.insert(id, msg.addr);
         self.rooms
@@ -89,6 +92,7 @@ impl Handler<Disconnect> for ChatServer {
     type Result = ();
     fn handle(&mut self, msg: Disconnect, _: &mut Self::Context) -> Self::Result {
         let mut rooms: Vec<String> = vec![];
+        println!("Disconnecting {}", msg.id);
         if self.sessions.remove(&msg.id).is_some() {
             for (name, sessions) in &mut self.rooms {
                 if sessions.remove(&msg.id) {
@@ -114,6 +118,7 @@ impl Handler<ClientMessage> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: ClientMessage, _: &mut Self::Context) -> Self::Result {
+        println!("handle message");
         self.send_message(&msg.room, &msg.msg, msg.id);
     }
 }
@@ -130,6 +135,7 @@ impl Handler<ListRooms> for ChatServer {
 impl Handler<Join> for ChatServer {
     type Result = ();
     fn handle(&mut self, msg: Join, _: &mut Self::Context) -> Self::Result {
+        println!("joining chat room");
         let Join { id, name } = msg;
         let mut rooms = vec![];
         for (n, sessions) in &mut self.rooms {

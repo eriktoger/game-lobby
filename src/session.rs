@@ -45,6 +45,7 @@ impl Actor for WsChatSession {
     fn started(&mut self, ctx: &mut Self::Context) {
         self.hb(ctx);
         let addr = ctx.address();
+        println!("Started {:?}", addr);
         self.addr
             .send(server::Connect {
                 addr: addr.recipient(),
@@ -72,6 +73,7 @@ impl Handler<server::Message> for WsChatSession {
 }
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
     fn handle(&mut self, item: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
+        println!("stream handler");
         let msg = match item {
             Err(_) => {
                 ctx.stop();
@@ -148,6 +150,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
         }
     }
 }
+
 impl WsChatSession {
     fn hb(&self, ctx: &mut ws::WebsocketContext<Self>) {
         ctx.run_interval(HEARBEET, |act, ctx| {

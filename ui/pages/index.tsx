@@ -1,5 +1,5 @@
 import Head from "next/head";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import Avatar from "../components/avatar";
 import ChatList from "../components/rooms";
 import Conversation from "../components/conversation";
@@ -24,30 +24,36 @@ export default function Home() {
     }
   };
 
-  const handleMessage = (msg: any, userId: any) => {
-    setMessages((prev: any) => {
-      const item = { content: msg, user_id: userId };
-      return [...prev, item];
-    });
-  };
+  const handleMessage = useCallback(
+    (msg: any, userId: any) => {
+      setMessages((prev: any) => {
+        const item = { content: msg, user_id: userId };
+        return [...prev, item];
+      });
+    },
+    [setMessages]
+  );
 
-  const onMessage = (data: any) => {
-    try {
-      let messageData = JSON.parse(data);
-      switch (messageData.chat_type) {
-        case "TYPING": {
-          handleTyping(messageData.value[0]);
-          return;
+  const onMessage = useCallback(
+    (data: any) => {
+      try {
+        let messageData = JSON.parse(data);
+        switch (messageData.chat_type) {
+          case "TYPING": {
+            handleTyping(messageData.value[0]);
+            return;
+          }
+          case "TEXT": {
+            handleMessage(messageData.value[0], messageData.user_id);
+            return;
+          }
         }
-        case "TEXT": {
-          handleMessage(messageData.value[0], messageData.user_id);
-          return;
-        }
+      } catch (e) {
+        console.log(e);
       }
-    } catch (e) {
-      console.log(e);
-    }
-  };
+    },
+    [handleMessage]
+  );
 
   const sendMessage = useWebsocket(onMessage);
   const updateFocus = () => {
