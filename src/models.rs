@@ -8,19 +8,23 @@ pub struct User {
     pub created_at: String,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Queryable, Insertable)]
-pub struct Conversation {
+pub struct Message {
     pub id: String,
     pub room_id: String,
-    pub user_id: String,
     pub content: String,
     pub created_at: String,
 }
-#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable)]
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NewMessage {
+    pub room_id: String,
+    pub content: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable, Eq, Hash, PartialEq)]
 pub struct Room {
     pub id: String,
     pub name: String,
-    pub last_message: String,
-    pub participant_ids: String,
     pub created_at: String,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -34,6 +38,7 @@ pub struct NewConversation {
     pub room_id: String,
     pub message: String,
 }
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoomResponse {
     pub room: Room,

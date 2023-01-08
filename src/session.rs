@@ -1,6 +1,5 @@
-use crate::db;
-use crate::models::NewConversation;
 use crate::server;
+use crate::{db, models::NewMessage};
 use actix::prelude::*;
 use actix_web::web;
 use actix_web_actors::ws;
@@ -122,12 +121,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             user_id: input.user_id.to_string(),
                         };
                         let mut conn = self.db_pool.get().unwrap();
-                        let new_conversation = NewConversation {
-                            user_id: input.user_id.to_string(),
+                        let new_message = NewMessage {
                             room_id: input.room_id.to_string(),
-                            message: input.value.join(""),
+                            content: input.value.join(""),
                         };
-                        let _ = db::insert_new_conversation(&mut conn, new_conversation);
+                        let _ = db::insert_new_message(&mut conn, new_message);
                         let msg = serde_json::to_string(&chat_msg).unwrap();
                         self.addr.do_send(server::ClientMessage {
                             id: self.id,

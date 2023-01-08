@@ -1,10 +1,7 @@
-use crate::models::{Conversation, NewConversation, Room, RoomResponse, RoomToUser, User};
+use crate::models::{Message, NewMessage, Room, RoomResponse, RoomToUser, User};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
-use std::{
-    collections::{HashMap, HashSet},
-    time::SystemTime,
-};
+use std::{collections::HashMap, time::SystemTime};
 use uuid::Uuid;
 type DbError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -37,14 +34,14 @@ pub fn find_user_by_phone(
     Ok(user)
 }
 
-pub fn get_conversation_by_room_uid(
+pub fn get_messages_by_room_uid(
     conn: &mut SqliteConnection,
     uid: Uuid,
-) -> Result<Option<Vec<Conversation>>, DbError> {
-    use crate::schema::conversations;
+) -> Result<Option<Vec<Message>>, DbError> {
+    use crate::schema::messages;
 
-    let convo = conversations::table
-        .filter(conversations::room_id.eq(uid.to_string()))
+    let convo = messages::table
+        .filter(messages::room_id.eq(uid.to_string()))
         .load(conn)
         .optional()?;
 
@@ -68,65 +65,64 @@ pub fn insert_new_user(conn: &mut SqliteConnection, nm: &str, pn: &str) -> Resul
     Ok(new_user)
 }
 
-pub fn insert_new_conversation(
+pub fn insert_new_message(
     conn: &mut SqliteConnection,
-    new: NewConversation,
-) -> Result<Conversation, DbError> {
-    use crate::schema::conversations::dsl::*;
-    let new_conversation = Conversation {
+    new: NewMessage,
+) -> Result<Message, DbError> {
+    use crate::schema::messages::dsl::*;
+    let new_message = Message {
         id: Uuid::new_v4().to_string(),
-        user_id: new.user_id,
         room_id: new.room_id,
-        content: new.message,
+        content: new.content,
         created_at: iso_date(),
     };
-    diesel::insert_into(conversations)
-        .values(&new_conversation)
+    diesel::insert_into(messages)
+        .values(&new_message)
         .execute(conn)?;
-    Ok(new_conversation)
+    Ok(new_message)
 }
 
 pub fn get_all_rooms(conn: &mut SqliteConnection) -> Result<Vec<RoomResponse>, DbError> {
+    use crate::schema::room_to_users;
     use crate::schema::rooms;
     use crate::schema::users;
+
+    let users_data: Vec<User> = users::table.get_results(conn)?;
     let rooms_data: Vec<Room> = rooms::table.get_results(conn)?;
-    let mut ids = HashSet::new();
-    let mut rooms_map = HashMap::new();
-    let data = rooms_data.to_vec();
-    for room in &data {
-        let user_ids = room
-            .participant_ids
-            .split(",")
-            .into_iter()
-            .collect::<Vec<_>>();
-        for id in user_ids.to_vec() {
-            ids.insert(id.to_string());
-        }
-        rooms_map.insert(room.id.to_string(), user_ids.to_vec());
+
+    let rooms_to_user_data: Vec<RoomToUser> = room_to_users::table.get_results(conn)?;
+    let mut response_rooms_map: HashMap<Room, Vec<User>> = HashMap::new();
+
+    for room in &rooms_data {
+        response_rooms_map.insert((*room).clone(), vec![]);
     }
-    let ids = ids.into_iter().collect::<Vec<_>>();
-    let users_data: Vec<User> = users::table
-        .filter(users::id.eq_any(ids))
-        .get_results(conn)?;
-    let users_map: HashMap<String, User> = HashMap::from_iter(
-        users_data
-            .into_iter()
-            .map(|item| (item.id.to_string(), item)),
-    );
-    let response_rooms = rooms_data
-        .into_iter()
-        .map(|room| {
-            let users = rooms_map
-                .get(&room.id.to_string())
+
+    for data in rooms_to_user_data {
+        let user = users_data.iter().find(|u| u.id == data.user);
+        let room = rooms_data.iter().find(|r| r.id == data.room);
+        if user.is_none() || room.is_none() {
+            continue;
+        }
+        let real_user = user.unwrap().clone();
+        let real_room = room.unwrap().clone();
+        if response_rooms_map.contains_key(&real_room) {
+            response_rooms_map
+                .get_mut(&real_room)
                 .unwrap()
-                .into_iter()
-                .filter_map(|id| users_map.get(id.to_owned()))
-                .map(|x| x.clone())
-                .collect::<Vec<_>>();
-            return RoomResponse { room, users };
+                .push(real_user);
+        } else {
+            response_rooms_map.insert(real_room, vec![real_user]);
+        }
+    }
+    let response_rooms2: Vec<(Room, Vec<User>)> = response_rooms_map.into_iter().collect();
+    let response_room = response_rooms2
+        .iter()
+        .map(|(room, users)| RoomResponse {
+            room: (*room).clone(),
+            users: (*users).clone(),
         })
-        .collect::<Vec<_>>();
-    Ok(response_rooms)
+        .collect();
+    Ok(response_room)
 }
 
 pub fn join_room(

@@ -112,6 +112,7 @@ impl Handler<Disconnect> for ChatServer {
 }
 impl Handler<ClientMessage> for ChatServer {
     type Result = ();
+
     fn handle(&mut self, msg: ClientMessage, _: &mut Self::Context) -> Self::Result {
         self.send_message(&msg.room, &msg.msg, msg.id);
     }
