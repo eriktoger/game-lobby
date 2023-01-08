@@ -73,7 +73,6 @@ impl Handler<server::Message> for WsChatSession {
 }
 impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
     fn handle(&mut self, item: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
-        println!("stream handler");
         let msg = match item {
             Err(_) => {
                 ctx.stop();
@@ -125,6 +124,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         let mut conn = self.db_pool.get().unwrap();
                         let new_message = NewMessage {
                             room_id: input.room_id.to_string(),
+                            user_id: input.user_id.to_string(),
                             content: input.value.join(""),
                         };
                         let _ = db::insert_new_message(&mut conn, new_message);

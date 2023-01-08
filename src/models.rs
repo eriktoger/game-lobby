@@ -11,6 +11,7 @@ pub struct User {
 pub struct Message {
     pub id: String,
     pub room_id: String,
+    pub user_id: String,
     pub content: String,
     pub created_at: String,
 }
@@ -18,6 +19,7 @@ pub struct Message {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NewMessage {
     pub room_id: String,
+    pub user_id: String,
     pub content: String,
 }
 

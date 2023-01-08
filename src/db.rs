@@ -73,6 +73,7 @@ pub fn insert_new_message(
     let new_message = Message {
         id: Uuid::new_v4().to_string(),
         room_id: new.room_id,
+        user_id: new.user_id,
         content: new.content,
         created_at: iso_date(),
     };

@@ -4,6 +4,7 @@ diesel::table! {
     messages (id) {
         id -> Text,
         room_id -> Text,
+        user_id -> Text,
         content -> Text,
         created_at -> Text,
     }
