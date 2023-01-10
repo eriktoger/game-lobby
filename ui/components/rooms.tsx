@@ -16,9 +16,7 @@ function ChatListItem({ onSelect, room, userId, index, selectedItem }: any) {
   const date = new Date(created_at);
   const ampm = date.getHours() >= 12 ? "PM" : "AM";
   const time = `${date.getHours()}:${date.getMinutes()} ${ampm}`;
-  const name = users
-    ?.filter((user: any) => user.id != userId)
-    .map((user: any) => user.username)[0];
+  const name = room.name;
   return (
     <div
       onClick={() => onSelect(index, {})}
@@ -30,7 +28,6 @@ function ChatListItem({ onSelect, room, userId, index, selectedItem }: any) {
     >
       <div className="flex justify-between items-center gap-3">
         <div className="flex gap-3 items-center w-full">
-          <Avatar>{name}</Avatar>
           <div className="w-full max-w-[150px]">
             <h3 className="font-semibold text-sm text-gray-700">{name}</h3>
             <p className="font-light text-xs text-gray-600 truncate">
@@ -46,7 +43,7 @@ function ChatListItem({ onSelect, room, userId, index, selectedItem }: any) {
   );
 }
 export default function ChatList({ onChatChange, userId }: any) {
-  const [data, setData] = useState([]);
+  const [data, setData] = useState<any>([]);
   const [isLoading, setLoading] = useState(false);
   const [selectedItem, setSelectedItem] = useState(-1);
   useEffect(() => {
@@ -58,27 +55,12 @@ export default function ChatList({ onChatChange, userId }: any) {
   }, []);
   const onSelectedChat = (idx: any, item: any) => {
     setSelectedItem(idx);
-    let mapUsers = new Map();
-    item.users.forEach((el: any) => {
-      mapUsers.set(el.id, el);
-    });
-    const users = {
-      get: (id: any) => {
-        return mapUsers?.get(id)?.username;
-      },
-      get_target_user: (id: any) => {
-        return item.users
-          .filter((el: any) => el.id != id)
-          .map((el: any) => el.username)
-          .join(", ");
-      },
-    };
-    onChatChange({ ...item.room, users });
+    onChatChange(item);
   };
   return (
     <div className="overflow-hidden space-y-3">
       {isLoading && <p>Loading chat lists.</p>}
-      {data?.map((item: any, index) => {
+      {data?.map((item: any, index: number) => {
         return (
           <ChatListItem
             onSelect={(idx: any) => onSelectedChat(idx, item)}
@@ -90,6 +72,14 @@ export default function ChatList({ onChatChange, userId }: any) {
           />
         );
       })}
+      {selectedItem !== -1 && (
+        <div>
+          <p>Users</p>
+          {data[selectedItem].users.map((user: any) => (
+            <p key={user.id}>{user.username}</p>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

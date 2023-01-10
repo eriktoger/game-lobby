@@ -10,7 +10,6 @@ export default function useWebsocket(onMessage: any) {
     ws.current.onclose = () => console.log("ws closed");
     const wsCurrent = ws.current;
     return () => {
-      console.log("Here", wsCurrent);
       //wsCurrent.close(); //this closed my websocket to early
     };
   }, []);
@@ -23,7 +22,6 @@ export default function useWebsocket(onMessage: any) {
   }, []);
   const sendMessage = (msg: any) => {
     if (!ws.current) return;
-    console.log("hej", msg);
     ws.current.send(msg);
   };
   return sendMessage;

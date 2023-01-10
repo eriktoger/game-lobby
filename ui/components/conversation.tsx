@@ -55,7 +55,7 @@ export default function Conversation({
           <ConversationItem
             right={item.user_id === auth.id}
             content={item.content}
-            username={users.get(item.user_id)}
+            username={users.find((u: any) => u.id === item.user_id)?.username}
             key={item.id}
           />
         );

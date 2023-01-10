@@ -10,12 +10,12 @@ import useWebsocket from "../libs/useWebsocket";
 
 export default function Home() {
   const [room, setSelectedRoom] = useState<any>(null);
+  const [users, setSelectedUsers] = useState<any>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showLogIn, setShowLogIn] = useState(false);
   const [auth, setAuthUser] = useLocalStorage("user", false);
   const [isLoading, messages, setMessages, fetchConversations] =
     useConversations("");
-
   const handleTyping = (mode: any) => {
     if (mode === "IN") {
       setIsTyping(true);
@@ -104,9 +104,10 @@ export default function Home() {
   };
 
   const updateMessages = async (data: any) => {
-    if (!data.id) return;
-    fetchConversations(data.id, auth?.id);
-    setSelectedRoom(data);
+    if (!data.room.id) return;
+    fetchConversations(data.room.id, auth?.id);
+    setSelectedRoom(data.room);
+    setSelectedUsers(data.users);
   };
 
   const signOut = () => {
@@ -143,16 +144,11 @@ export default function Home() {
             <section className="rounded-r-[25px] w-full max-w-[690px] grid grid-rows-[80px_minmax(450px,_1fr)_65px]">
               <div className="rounded-tr-[25px] w-ful">
                 <div className="flex gap-3 p-3 items-center">
-                  <Avatar color="rgb(245 158 11)">
-                    {room.users.get_target_user(auth.id)}
-                  </Avatar>
-                  <div>
-                    <p className="font-semibold text-gray-600 text-base">
-                      {room.users.get_target_user(auth.id)}
-                    </p>
-                    <div className="text-xs text-gray-400">
-                      {isTyping ? "Typing..." : "10:15 AM"}
-                    </div>
+                  <p className="font-semibold text-gray-600 text-base">
+                    {room.name}
+                  </p>
+                  <div className="text-xs text-gray-400">
+                    {isTyping ? "Typing..." : "10:15 AM"}
                   </div>
                 </div>
                 <hr className="bg-[#F0EEF5]" />
@@ -160,7 +156,7 @@ export default function Home() {
               {isLoading && room.id && (
                 <p className="px-4 text-slate-500">Loading conversation...</p>
               )}
-              <Conversation data={messages} auth={auth} users={room.users} />
+              <Conversation data={messages} auth={auth} users={users} />
               <div className="w-full">
                 <form
                   onSubmit={submitMessage}
