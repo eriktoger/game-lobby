@@ -44,6 +44,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::get_conversation_by_id)
             .service(routes::get_rooms)
             .service(routes::join_room)
+            .service(routes::update_user_session)
             .service(Files::new("/", "./static"))
     })
     .workers(2)

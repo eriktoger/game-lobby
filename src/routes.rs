@@ -131,14 +131,14 @@ pub async fn get_user_by_phone(
 #[post("/users/{user_id}/session/{session_id}")]
 pub async fn update_user_session(
     pool: web::Data<DbPool>,
-    user_id: web::Path<String>,
-    session_id: web::Path<String>,
+    params: web::Path<(String, String)>,
 ) -> Result<HttpResponse, Error> {
-    let s_id = session_id.to_string();
-    let u_id = user_id.to_string();
+    let user_id = params.0.to_string();
+    let session_id = params.1.to_string();
+
     web::block(move || {
         let mut conn = pool.get()?;
-        db::update_user_session(&mut conn, u_id, s_id)
+        db::update_user_session(&mut conn, user_id, session_id)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
