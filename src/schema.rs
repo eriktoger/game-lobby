@@ -31,6 +31,7 @@ diesel::table! {
         id -> Text,
         username -> Text,
         phone -> Text,
+        web_socket_session -> Text,
         created_at -> Text,
     }
 }

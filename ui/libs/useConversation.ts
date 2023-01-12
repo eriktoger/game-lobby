@@ -5,14 +5,14 @@ const fetchRoomData = async (room_id: any, user_id?: string) => {
   const url2 = `http://localhost:8080/rooms/join`;
   try {
     const resp = fetch(url).then((res) => res.json());
-    user_id &&
-      (await fetch(url2, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ room: room_id, user: user_id }),
-      }).then((res) => res.json()));
+    // user_id &&
+    //   (await fetch(url2, {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/json",
+    //     },
+    //     body: JSON.stringify({ room: room_id, user: user_id }),
+    //   }).then((res) => res.json()));
     return resp;
   } catch (e) {
     console.log(e);

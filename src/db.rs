@@ -22,6 +22,21 @@ pub fn find_user_by_uid(conn: &mut SqliteConnection, uid: Uuid) -> Result<Option
     Ok(user)
 }
 
+pub fn update_user_session(
+    conn: &mut SqliteConnection,
+    user_id: String,
+    session_id: String,
+) -> Result<usize, DbError> {
+    use crate::schema::users::dsl::*;
+
+    let result = diesel::update(users)
+        .filter(id.eq(user_id.to_string()))
+        .set(web_socket_session.eq(session_id))
+        .execute(conn)?;
+
+    Ok(result)
+}
+
 pub fn find_user_by_phone(
     conn: &mut SqliteConnection,
     user_phone: String,
@@ -54,6 +69,7 @@ pub fn insert_new_user(conn: &mut SqliteConnection, nm: &str, pn: &str) -> Resul
         id: Uuid::new_v4().to_string(),
         username: nm.to_owned(),
         phone: pn.to_owned(),
+        web_socket_session: "0".to_string(),
         created_at: iso_date(),
     };
     // let error = diesel::insert_into(users).values(&new_user).execute(conn);
@@ -153,4 +169,31 @@ pub fn join_room(
     }
 
     Ok(new_room_to_user)
+}
+
+pub fn leave_room(
+    conn: &mut SqliteConnection,
+    room_id: &str,
+    user_id: &str,
+) -> Result<(), DbError> {
+    use crate::schema::room_to_users::dsl::*;
+
+    diesel::delete(room_to_users.filter(room.eq(room_id)))
+        .filter(user.eq(user_id))
+        .execute(conn)?;
+
+    Ok(())
+}
+
+pub fn current_room<'a>(
+    conn: &'a mut SqliteConnection,
+    user_id: &'a str,
+) -> Result<Option<RoomToUser>, DbError> {
+    use crate::schema::room_to_users;
+
+    let rooms_data: Vec<RoomToUser> = room_to_users::table.get_results(conn)?;
+
+    let exists = rooms_data.iter().find(|x| x.user == user_id).cloned();
+
+    Ok(exists)
 }

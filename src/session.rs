@@ -23,16 +23,18 @@ pub struct WsChatSession {
     pub addr: Addr<server::ChatServer>,
     pub db_pool: web::Data<DbPool>,
 }
-#[derive(PartialEq, Serialize, Deserialize)]
+#[derive(PartialEq, Serialize, Deserialize, Debug)]
 pub enum ChatType {
     TYPING,
     TEXT,
+    JOIN,  //Join a room with websocket instead of routes
+    LEAVE, // Leave a room (volentary disconnect I guess)
     CONNECT,
     DISCONNECT,
 }
 
-#[derive(Serialize, Deserialize)]
-struct ChatMessage {
+#[derive(Serialize, Deserialize, Debug)]
+pub struct ChatMessage {
     pub chat_type: ChatType,
     pub value: Vec<String>,
     pub room_id: String,
@@ -45,7 +47,6 @@ impl Actor for WsChatSession {
     fn started(&mut self, ctx: &mut Self::Context) {
         self.hb(ctx);
         let addr = ctx.address();
-        println!("Started {:?}", addr);
         self.addr
             .send(server::Connect {
                 addr: addr.recipient(),
@@ -133,6 +134,46 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             id: self.id,
                             msg,
                             room: self.room.clone(),
+                        })
+                    }
+                    ChatType::JOIN => {
+                        println!("Joining {:?}", input);
+                        let mut conn = self.db_pool.get().unwrap();
+                        let current_room = db::current_room(&mut conn, &input.user_id);
+                        println!("Joining {:?}", current_room);
+                        match current_room {
+                            Ok(Some(r)) => {
+                                if r.room == input.room_id {
+                                    return; // we are already in the room
+                                } else {
+                                    //we should leave the room and join another
+                                    let _ = db::leave_room(&mut conn, &r.room, &r.user);
+                                    let _ =
+                                        db::join_room(&mut conn, &input.room_id, &input.user_id);
+                                }
+                            }
+                            Ok(None) => {
+                                let _ = db::join_room(&mut conn, &input.room_id, &input.user_id);
+                            } //we should only join a room
+                            _ => {}
+                        }
+
+                        //comparing input and current_room should be enough to see if we should do something
+                        // join the room (if we are not already in it)
+                        // leave our old room if we have one
+                        // send the appropriate messages to the old and new room
+                        let chat_msg = ChatMessage {
+                            chat_type: ChatType::JOIN,
+                            value: input.value.to_vec(),
+                            id: self.id,
+                            room_id: input.room_id.to_string(),
+                            user_id: input.user_id.to_string(),
+                        };
+                        let msg = serde_json::to_string(&chat_msg).unwrap();
+                        self.addr.do_send(server::ClientMessage {
+                            id: self.id,
+                            msg,
+                            room: input.room_id.to_string(),
                         })
                     }
                     _ => {}

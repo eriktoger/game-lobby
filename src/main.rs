@@ -16,7 +16,6 @@ mod server;
 mod session;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let server = server::ChatServer::new().start();
     let conn_spec = "chat.db";
     let manager = ConnectionManager::<SqliteConnection>::new(conn_spec);
     let pool = r2d2::Pool::builder()
@@ -24,6 +23,7 @@ async fn main() -> std::io::Result<()> {
         .expect("Failed to create pool.");
     let server_addr = "127.0.0.1";
     let server_port = 8080;
+    let server = server::ChatServer::new(pool.clone()).start();
     let app = HttpServer::new(move || {
         let cors = Cors::default()
             .allowed_origin("http://localhost:3000")

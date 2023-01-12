@@ -47,6 +47,12 @@ export default function Home() {
             handleMessage(messageData.value[0], messageData.user_id);
             return;
           }
+          case "CONNECT": {
+            console.log({ messageData });
+            //use this data to update the user and give it the websocket-id
+            //so that you can use it to send messages when we only have the user_id
+            //But it still seems to be a work around.
+          }
         }
       } catch (e) {
         console.log(e);
@@ -105,9 +111,18 @@ export default function Home() {
 
   const updateMessages = async (data: any) => {
     if (!data.room.id) return;
-    fetchConversations(data.room.id, auth?.id);
+    await fetchConversations(data.room.id, auth?.id);
     setSelectedRoom(data.room);
     setSelectedUsers(data.users);
+    const d = {
+      id: 0,
+      chat_type: "JOIN",
+      value: [""],
+      room_id: data.room.id,
+      user_id: auth.id,
+    };
+    console.log({ d });
+    sendMessage(JSON.stringify(d));
   };
 
   const signOut = () => {

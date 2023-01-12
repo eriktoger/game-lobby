@@ -127,6 +127,25 @@ pub async fn get_user_by_phone(
         Ok(res)
     }
 }
+
+#[post("/users/{user_id}/session/{session_id}")]
+pub async fn update_user_session(
+    pool: web::Data<DbPool>,
+    user_id: web::Path<String>,
+    session_id: web::Path<String>,
+) -> Result<HttpResponse, Error> {
+    let s_id = session_id.to_string();
+    let u_id = user_id.to_string();
+    web::block(move || {
+        let mut conn = pool.get()?;
+        db::update_user_session(&mut conn, u_id, s_id)
+    })
+    .await?
+    .map_err(actix_web::error::ErrorInternalServerError)?;
+
+    Ok(HttpResponse::Ok().into())
+}
+
 #[get("/rooms")]
 pub async fn get_rooms(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let rooms = web::block(move || {
@@ -149,6 +168,7 @@ pub async fn get_rooms(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     }
 }
 
+//this sould be a web-socket thing instead
 #[post("/rooms/join")]
 pub async fn join_room(
     pool: web::Data<DbPool>,

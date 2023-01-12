@@ -5,6 +5,7 @@ pub struct User {
     pub id: String,
     pub username: String,
     pub phone: String,
+    pub web_socket_session: String,
     pub created_at: String,
 }
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Queryable, Insertable)]
