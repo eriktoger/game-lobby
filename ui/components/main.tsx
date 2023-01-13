@@ -123,11 +123,8 @@ export default function Main({ auth, setAuthUser }: any) {
     setSelectedRoom(data.room);
     setSelectedUsers(data.users);
     const d = {
-      id: 0,
       chat_type: "JOIN",
-      value: [""],
-      room_id: data.room.id,
-      user_id: auth.id,
+      value: data.room.id,
     };
     console.log({ d });
     sendMessage(JSON.stringify(d));
@@ -149,8 +146,10 @@ export default function Main({ auth, setAuthUser }: any) {
           LOG OUT
         </button>
       </aside>
+
       {room?.id && (
         <section className="rounded-r-[25px] w-full max-w-[690px] grid grid-rows-[80px_minmax(450px,_1fr)_65px]">
+          <div>{auth?.username}</div>
           <div className="rounded-tr-[25px] w-ful">
             <div className="flex gap-3 p-3 items-center">
               <p className="font-semibold text-gray-600 text-base">

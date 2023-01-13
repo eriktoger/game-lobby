@@ -1,4 +1,7 @@
-use crate::models::{Message, NewMessage, Room, RoomResponse, RoomToUser, User};
+use crate::{
+    models::{Message, NewMessage, Room, RoomResponse, RoomToUser, User},
+    session::ChatMessage,
+};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use std::{collections::HashMap, time::SystemTime};
@@ -9,6 +12,14 @@ fn iso_date() -> String {
     let now = SystemTime::now();
     let now: DateTime<Utc> = now.into();
     return now.to_rfc3339();
+}
+
+pub fn find_user_by_ws(conn: &mut SqliteConnection, ws_id: String) -> User {
+    use crate::schema::users::dsl::*;
+    users
+        .filter(web_socket_session.eq(ws_id.to_string()))
+        .first::<User>(conn)
+        .unwrap()
 }
 
 pub fn find_user_by_uid(conn: &mut SqliteConnection, uid: Uuid) -> Result<Option<User>, DbError> {
@@ -83,14 +94,25 @@ pub fn insert_new_user(conn: &mut SqliteConnection, nm: &str, pn: &str) -> Resul
 
 pub fn insert_new_message(
     conn: &mut SqliteConnection,
-    new: NewMessage,
+    ws_id: String,
+    message: String,
 ) -> Result<Message, DbError> {
     use crate::schema::messages::dsl::*;
+    use crate::schema::room_to_users::dsl::*;
+
+    let current_user = find_user_by_ws(conn, ws_id);
+
+    let current_room = room_to_users
+        .filter(user.eq(current_user.id.to_string()))
+        .first::<RoomToUser>(conn)
+        .optional()?
+        .unwrap();
+
     let new_message = Message {
         id: Uuid::new_v4().to_string(),
-        room_id: new.room_id,
-        user_id: new.user_id,
-        content: new.content,
+        room_id: current_room.id,
+        user_id: current_user.id,
+        content: message,
         created_at: iso_date(),
     };
     diesel::insert_into(messages)
@@ -142,6 +164,32 @@ pub fn get_all_rooms(conn: &mut SqliteConnection) -> Result<Vec<RoomResponse>, D
     Ok(response_room)
 }
 
+pub fn get_current_room_with_users(
+    conn: &mut SqliteConnection,
+    ws_id: String,
+) -> Result<RoomResponse, DbError> {
+    use crate::schema::room_to_users::dsl::*;
+    use crate::schema::users;
+
+    let users_data: Vec<User> = users::table.get_results(conn)?;
+    let current_room = get_current_room(conn, ws_id)?;
+
+    let rooms_to_user_data: Vec<RoomToUser> = room_to_users
+        .filter(room.eq(current_room.id.clone()))
+        .get_results(conn)?;
+
+    let mut room_response = RoomResponse {
+        room: current_room,
+        users: vec![],
+    };
+
+    for r in &rooms_to_user_data {
+        let current_user = users_data.iter().find(|u| u.id == r.user).unwrap();
+        room_response.users.push((*current_user).clone());
+    }
+    Ok(room_response)
+}
+
 pub fn join_room(
     conn: &mut SqliteConnection,
     room_id: &str,
@@ -185,15 +233,20 @@ pub fn leave_room(
     Ok(())
 }
 
-pub fn current_room<'a>(
+pub fn get_current_room<'a>(
     conn: &'a mut SqliteConnection,
-    user_id: &'a str,
-) -> Result<Option<RoomToUser>, DbError> {
+    ws_id: String,
+) -> Result<Room, diesel::result::Error> {
     use crate::schema::room_to_users;
+    use crate::schema::rooms::dsl::*;
+    let current_user = find_user_by_ws(conn, ws_id);
+    let rooms_data: Vec<RoomToUser> = room_to_users::table.get_results(conn).unwrap();
 
-    let rooms_data: Vec<RoomToUser> = room_to_users::table.get_results(conn)?;
-
-    let exists = rooms_data.iter().find(|x| x.user == user_id).cloned();
-
-    Ok(exists)
+    let exists = rooms_data
+        .iter()
+        .find(|x| x.user == current_user.id)
+        .unwrap();
+    rooms
+        .filter(id.eq(exists.room.to_string()))
+        .first::<Room>(conn)
 }

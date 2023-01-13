@@ -62,19 +62,22 @@ impl ChatServer {
         }
     }
     //we could pass in ChatMessage instead of message
-    fn send_message(&self, room: &str, message: &str, skip_id: usize) {
+    fn send_message(&self, room: &str, message: &str, ws_id: usize) {
         println!("sending message {} {}", message, room);
         let mut conn = self.pool.get().unwrap();
+
+        let current_room = db::get_current_room(&mut conn, ws_id.to_string());
         let rooms = db::get_all_rooms(&mut conn).unwrap();
+        let current_rr = db::get_current_room_with_users(&mut conn, ws_id.to_string()).unwrap();
         //let room_members = db::get_room_members(skip_id);
-        println!("skip_id {:?} ", skip_id);
+        println!("ws_id {:?} ", ws_id);
         // room is the actuall id to the room, we could just find it in rooms
-        if let Some(sessions) = self.rooms.get(room) {
-            for id in sessions {
-                if *id != skip_id {
-                    if let Some(addr) = self.sessions.get(id) {
-                        addr.do_send(Message(message.to_owned()));
-                    }
+
+        for usr in current_rr.users {
+            let id = usr.web_socket_session;
+            if id != ws_id.to_string() {
+                if let Some(addr) = self.sessions.get(&id.parse::<usize>().unwrap()) {
+                    addr.do_send(Message(message.to_owned()));
                 }
             }
         }

@@ -48,6 +48,7 @@ export default function Conversation({
   useEffect(() => {
     ref.current?.scrollTo(0, ref.current.scrollHeight);
   }, [data]);
+  console.log({ auth });
   return (
     <div className="p-4 space-y-4 overflow-auto" ref={ref}>
       {data.map((item) => {

@@ -36,10 +36,8 @@ pub enum ChatType {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ChatMessage {
     pub chat_type: ChatType,
-    pub value: Vec<String>,
-    pub room_id: String,
+    pub value: String,
     pub user_id: String,
-    pub id: usize,
 }
 
 impl Actor for WsChatSession {
@@ -98,38 +96,16 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                 }
                 let input = data_json.as_ref().unwrap();
                 match &input.chat_type {
-                    ChatType::TYPING => {
-                        let chat_msg = ChatMessage {
-                            chat_type: ChatType::TYPING,
-                            value: input.value.to_vec(),
-                            id: self.id,
-                            room_id: input.room_id.to_string(),
-                            user_id: input.user_id.to_string(),
-                        };
-                        let msg = serde_json::to_string(&chat_msg).unwrap();
-                        self.addr.do_send(server::ClientMessage {
-                            id: self.id,
-                            msg,
-                            room: self.room.clone(),
-                        })
-                    }
                     ChatType::TEXT => {
                         let input = data_json.as_ref().unwrap();
-                        let chat_msg = ChatMessage {
-                            chat_type: ChatType::TEXT,
-                            value: input.value.to_vec(),
-                            id: self.id,
-                            room_id: input.room_id.to_string(),
-                            user_id: input.user_id.to_string(),
-                        };
+
                         let mut conn = self.db_pool.get().unwrap();
-                        let new_message = NewMessage {
-                            room_id: input.room_id.to_string(),
-                            user_id: input.user_id.to_string(),
-                            content: input.value.join(""),
-                        };
-                        let _ = db::insert_new_message(&mut conn, new_message);
-                        let msg = serde_json::to_string(&chat_msg).unwrap();
+                        let _ = db::insert_new_message(
+                            &mut conn,
+                            self.id.to_string(),
+                            input.value.clone(),
+                        );
+                        let msg = serde_json::to_string(input).unwrap();
                         self.addr.do_send(server::ClientMessage {
                             id: self.id,
                             msg,
@@ -139,23 +115,28 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                     ChatType::JOIN => {
                         println!("Joining {:?}", input);
                         let mut conn = self.db_pool.get().unwrap();
-                        let current_room = db::current_room(&mut conn, &input.user_id);
+                        let current_room = db::get_current_room(&mut conn, self.id.to_string());
+
                         println!("Joining {:?}", current_room);
+                        // send to each user in the room (and to her self?)
+                        // and that user needs to add the user to its users-list
+                        let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
                         match current_room {
-                            Ok(Some(r)) => {
-                                if r.room == input.room_id {
+                            Ok(r) => {
+                                if r.id == input.value {
                                     return; // we are already in the room
                                 } else {
                                     //we should leave the room and join another
-                                    let _ = db::leave_room(&mut conn, &r.room, &r.user);
+                                    let _ = db::leave_room(&mut conn, &r.id, &current_user.id);
+
                                     let _ =
-                                        db::join_room(&mut conn, &input.room_id, &input.user_id);
+                                        db::join_room(&mut conn, &input.value, &current_user.id);
                                 }
                             }
-                            Ok(None) => {
-                                let _ = db::join_room(&mut conn, &input.room_id, &input.user_id);
+
+                            Err(_) => {
+                                let _ = db::join_room(&mut conn, &input.value, &current_user.id);
                             } //we should only join a room
-                            _ => {}
                         }
 
                         //comparing input and current_room should be enough to see if we should do something
@@ -164,16 +145,14 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         // send the appropriate messages to the old and new room
                         let chat_msg = ChatMessage {
                             chat_type: ChatType::JOIN,
-                            value: input.value.to_vec(),
-                            id: self.id,
-                            room_id: input.room_id.to_string(),
-                            user_id: input.user_id.to_string(),
+                            value: current_user.username, //to tell who has joined
+                            user_id: current_user.id,
                         };
                         let msg = serde_json::to_string(&chat_msg).unwrap();
                         self.addr.do_send(server::ClientMessage {
                             id: self.id,
                             msg,
-                            room: input.room_id.to_string(),
+                            room: input.value.clone(),
                         })
                     }
                     _ => {}
