@@ -41,7 +41,7 @@ async fn main() -> std::io::Result<()> {
             .service(routes::create_user)
             .service(routes::get_user_by_id)
             .service(routes::get_user_by_phone)
-            .service(routes::get_conversation_by_id)
+            .service(routes::get_data_from_room)
             .service(routes::get_rooms)
             .service(routes::join_room)
             .service(routes::update_user_session)

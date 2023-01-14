@@ -49,6 +49,12 @@ pub struct RoomResponse {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RoomData {
+    pub users: Vec<User>,
+    pub messages: Vec<Message>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewRoomToUser {
     pub room: String,
     pub user: String,

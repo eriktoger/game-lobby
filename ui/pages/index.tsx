@@ -4,7 +4,7 @@ import Avatar from "../components/avatar";
 import ChatList from "../components/rooms";
 import Conversation from "../components/conversation";
 import Login from "../components/login";
-import useConversations from "../libs/useConversation";
+import useConversations from "../libs/useRooms";
 import useLocalStorage from "../libs/useLocalStorage";
 import useWebsocket from "../libs/useWebsocket";
 import Main from "../components/main";

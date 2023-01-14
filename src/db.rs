@@ -16,6 +16,7 @@ fn iso_date() -> String {
 
 pub fn find_user_by_ws(conn: &mut SqliteConnection, ws_id: String) -> User {
     use crate::schema::users::dsl::*;
+    print!("{}", ws_id);
     users
         .filter(web_socket_session.eq(ws_id.to_string()))
         .first::<User>(conn)
@@ -121,7 +122,14 @@ pub fn insert_new_message(
     Ok(new_message)
 }
 
-pub fn get_all_rooms(conn: &mut SqliteConnection) -> Result<Vec<RoomResponse>, DbError> {
+pub fn get_rooms(conn: &mut SqliteConnection) -> Result<Vec<Room>, DbError> {
+    use crate::schema::rooms;
+
+    let rooms_data = rooms::table.get_results(conn)?;
+    Ok(rooms_data)
+}
+
+pub fn get_rooms_with_users(conn: &mut SqliteConnection) -> Result<Vec<RoomResponse>, DbError> {
     use crate::schema::room_to_users;
     use crate::schema::rooms;
     use crate::schema::users;
@@ -188,6 +196,28 @@ pub fn get_current_room_with_users(
         room_response.users.push((*current_user).clone());
     }
     Ok(room_response)
+}
+
+pub fn get_users_in_room(
+    conn: &mut SqliteConnection,
+    room_id: String,
+) -> Result<Vec<User>, DbError> {
+    use crate::schema::room_to_users::dsl::*;
+    use crate::schema::users;
+
+    let users_data: Vec<User> = users::table.get_results(conn)?;
+
+    let rooms_to_user_data: Vec<RoomToUser> = room_to_users
+        .filter(room.eq(room_id.clone()))
+        .get_results(conn)?;
+
+    let mut current_users = vec![];
+
+    for r in &rooms_to_user_data {
+        let current_user = users_data.iter().find(|u| u.id == r.user).unwrap();
+        current_users.push((*current_user).clone());
+    }
+    Ok(current_users)
 }
 
 pub fn join_room(

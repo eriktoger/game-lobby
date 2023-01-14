@@ -67,7 +67,7 @@ impl ChatServer {
         let mut conn = self.pool.get().unwrap();
 
         let current_room = db::get_current_room(&mut conn, ws_id.to_string());
-        let rooms = db::get_all_rooms(&mut conn).unwrap();
+        let rooms = db::get_rooms_with_users(&mut conn).unwrap();
         let current_rr = db::get_current_room_with_users(&mut conn, ws_id.to_string()).unwrap();
         //let room_members = db::get_room_members(skip_id);
         println!("ws_id {:?} ", ws_id);
@@ -76,7 +76,9 @@ impl ChatServer {
         for usr in current_rr.users {
             let id = usr.web_socket_session;
             if id != ws_id.to_string() {
+                println!("{}-{}", id, ws_id);
                 if let Some(addr) = self.sessions.get(&id.parse::<usize>().unwrap()) {
+                    println!("Sending: {}", id);
                     addr.do_send(Message(message.to_owned()));
                 }
             }

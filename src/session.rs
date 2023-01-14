@@ -155,6 +155,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             room: input.value.clone(),
                         })
                     }
+                    ChatType::LEAVE => {
+                        println!("LEAVING{:?}", input);
+                    }
                     _ => {}
                 }
             }

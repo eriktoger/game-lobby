@@ -4,32 +4,31 @@ import Avatar from "../components/avatar";
 import ChatList from "../components/rooms";
 import Conversation from "../components/conversation";
 import Login from "../components/login";
-import useConversations from "../libs/useConversation";
+import useRooms from "../libs/useRooms";
 import useLocalStorage from "../libs/useLocalStorage";
 import useWebsocket from "../libs/useWebsocket";
+import { Message, Room } from "./types";
 
 export default function Main({ auth, setAuthUser }: any) {
-  const [room, setSelectedRoom] = useState<any>(null);
-  const [users, setSelectedUsers] = useState<any>(null);
-  const [isTyping, setIsTyping] = useState(false);
-  const [isLoading, messages, setMessages, fetchConversations] =
-    useConversations("");
-  const handleTyping = (mode: any) => {
-    if (mode === "IN") {
-      setIsTyping(true);
-    } else {
-      setIsTyping(false);
-    }
-  };
+  const [room, setSelectedRoom] = useState<Room | null>(null);
+  const { isLoading, users, setUsers, messages, setMessages, fetchRoomData } =
+    useRooms();
 
+  console.log({ users });
   const handleMessage = useCallback(
-    (msg: any, userId: any) => {
-      setMessages((prev: any) => {
-        const item = { content: msg, user_id: userId };
+    (content: string, userId: any) => {
+      setMessages((prev: Message[]) => {
+        const item: Message = {
+          id: Math.random().toString(),
+          content,
+          user_id: userId,
+          room_id: room?.id ?? "",
+          created_at: Date.now().toString(),
+        };
         return [...prev, item];
       });
     },
-    [setMessages]
+    [room?.id, setMessages]
   );
 
   const onMessage = useCallback(
@@ -37,10 +36,6 @@ export default function Main({ auth, setAuthUser }: any) {
       try {
         let messageData = JSON.parse(data);
         switch (messageData.chat_type) {
-          case "TYPING": {
-            handleTyping(messageData.value[0]);
-            return;
-          }
           case "TEXT": {
             handleMessage(messageData.value[0], messageData.user_id);
             return;
@@ -61,36 +56,19 @@ export default function Main({ auth, setAuthUser }: any) {
             //so that you can use it to send messages when we only have the user_id
             //But it still seems to be a work around.
           }
+          case "JOIN": {
+            console.log({ messageData });
+            setUsers((prev: any) => [...prev, { username: messageData.value }]);
+          }
         }
       } catch (e) {
         console.log(e);
       }
     },
-    [auth, handleMessage]
+    [auth, handleMessage, setUsers]
   );
 
   const sendMessage = useWebsocket(onMessage);
-  const updateFocus = () => {
-    const data = {
-      id: 0,
-      chat_type: "TYPING",
-      value: ["IN"],
-      room_id: room.id,
-      user_id: auth.id,
-    };
-    sendMessage(JSON.stringify(data));
-  };
-
-  const onFocusChange = () => {
-    const data = {
-      id: 0,
-      chat_type: "TYPING",
-      value: ["OUT"],
-      room_id: room.id,
-      user_id: auth.id,
-    };
-    sendMessage(JSON.stringify(data));
-  };
 
   const submitMessage = (e: any) => {
     e.preventDefault();
@@ -99,7 +77,7 @@ export default function Main({ auth, setAuthUser }: any) {
       return;
     }
 
-    if (!room.id) {
+    if (!room) {
       alert("Please select chat room!");
       return;
     }
@@ -114,20 +92,21 @@ export default function Main({ auth, setAuthUser }: any) {
     sendMessage(JSON.stringify(data));
     e.target.message.value = "";
     handleMessage(message, auth.id);
-    onFocusChange();
   };
 
-  const updateMessages = async (data: any) => {
-    if (!data.room.id) return;
-    await fetchConversations(data.room.id, auth?.id);
-    setSelectedRoom(data.room);
-    setSelectedUsers(data.users);
-    const d = {
+  const onChangeRoom = async (room: Room) => {
+    if (!room.id) return;
+    await fetchRoomData(room.id);
+    setSelectedRoom(room);
+
+    const joinRoom = {
+      //this should have a type
       chat_type: "JOIN",
-      value: data.room.id,
+      value: room.id,
+      user_id: auth?.id,
     };
-    console.log({ d });
-    sendMessage(JSON.stringify(d));
+    console.log({ joinRoom });
+    sendMessage(JSON.stringify(joinRoom));
   };
 
   const signOut = () => {
@@ -138,7 +117,7 @@ export default function Main({ auth, setAuthUser }: any) {
   return (
     <main className="flex w-full max-w-[1020px] h-[700px] mx-auto bg-[#FAF9FE] rounded-[25px] backdrop-opacity-30 opacity-95">
       <aside className="bg-[#F0EEF5] w-[325px] h-[700px] rounded-l-[25px] p-4 overflow-auto relative">
-        <ChatList onChatChange={updateMessages} userId={auth.id} />
+        <ChatList onChangeRoom={onChangeRoom} userId={auth.id} users={users} />
         <button
           onClick={signOut}
           className="text-xs w-full max-w-[295px] p-3 rounded-[10px] bg-violet-200 font-semibold text-violet-600 text-center absolute bottom-4"
@@ -155,9 +134,6 @@ export default function Main({ auth, setAuthUser }: any) {
               <p className="font-semibold text-gray-600 text-base">
                 {room.name}
               </p>
-              <div className="text-xs text-gray-400">
-                {isTyping ? "Typing..." : "10:15 AM"}
-              </div>
             </div>
             <hr className="bg-[#F0EEF5]" />
           </div>
@@ -171,8 +147,6 @@ export default function Main({ auth, setAuthUser }: any) {
               className="flex gap-2 items-center rounded-full border border-violet-500 bg-violet-200 p-1 m-2"
             >
               <input
-                onBlur={onFocusChange}
-                onFocus={updateFocus}
                 name="message"
                 className="p-2 placeholder-gray-600 text-sm w-full rounded-full bg-violet-200 focus:outline-none"
                 placeholder="Type your message here..."

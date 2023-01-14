@@ -1,5 +1,6 @@
 use crate::db;
 use crate::models;
+use crate::models::RoomData;
 use crate::server;
 use crate::session;
 use actix::*;
@@ -77,30 +78,24 @@ pub async fn get_user_by_id(
         Ok(res)
     }
 }
-#[get("/conversations/{uid}")]
-pub async fn get_conversation_by_id(
+#[get("/rooms/{uid}/data")]
+pub async fn get_data_from_room(
     pool: web::Data<DbPool>,
     uid: web::Path<Uuid>,
 ) -> Result<HttpResponse, Error> {
     let room_id = uid.to_owned();
-    let conversations = web::block(move || {
-        let mut conn = pool.get()?;
-        db::get_messages_by_room_uid(&mut conn, room_id)
+    let (messages, users) = web::block(move || {
+        let mut conn = pool.get().unwrap();
+        let m = db::get_messages_by_room_uid(&mut conn, room_id)
+            .unwrap()
+            .unwrap();
+        let u = db::get_users_in_room(&mut conn, room_id.to_string()).unwrap();
+
+        (m, u)
     })
-    .await?
-    .map_err(actix_web::error::ErrorInternalServerError)?;
-    if let Some(data) = conversations {
-        Ok(HttpResponse::Ok().json(data))
-    } else {
-        let res = HttpResponse::NotFound().body(
-            json!({
-                "error": 404,
-                "message": format!("No conversation with room_id: {room_id}")
-            })
-            .to_string(),
-        );
-        Ok(res)
-    }
+    .await?;
+    let room_response = RoomData { users, messages };
+    Ok(HttpResponse::Ok().json(room_response))
 }
 #[get("/users/phone/{user_phone}")]
 pub async fn get_user_by_phone(
@@ -150,7 +145,7 @@ pub async fn update_user_session(
 pub async fn get_rooms(pool: web::Data<DbPool>) -> Result<HttpResponse, Error> {
     let rooms = web::block(move || {
         let mut conn = pool.get()?;
-        db::get_all_rooms(&mut conn)
+        db::get_rooms(&mut conn)
     })
     .await?
     .map_err(actix_web::error::ErrorInternalServerError)?;
