@@ -111,7 +111,7 @@ pub fn insert_new_message(
 
     let new_message = Message {
         id: Uuid::new_v4().to_string(),
-        room_id: current_room.id,
+        room_id: current_room.room,
         user_id: current_user.id,
         content: message,
         created_at: iso_date(),
