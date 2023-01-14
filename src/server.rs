@@ -1,5 +1,6 @@
 use crate::{
     db,
+    models::{Room, User},
     session::{self, ChatMessage},
 };
 use actix::prelude::*;
@@ -121,6 +122,17 @@ impl Handler<Connect> for ChatServer {
         id
     }
 }
+
+fn get_user_and_room(
+    pool: &mut Pool<ConnectionManager<SqliteConnection>>,
+    ws_id: String,
+) -> (Room, User) {
+    let mut conn = pool.get().unwrap();
+    let current_room = db::get_current_room(&mut conn, ws_id.clone()).unwrap();
+    let current_user = db::find_user_by_ws(&mut conn, ws_id);
+    let _ = db::leave_room(&mut conn, &current_room.id, &current_user.id);
+    (current_room, current_user)
+}
 impl Handler<Disconnect> for ChatServer {
     type Result = ();
     fn handle(&mut self, msg: Disconnect, _: &mut Self::Context) -> Self::Result {
@@ -133,18 +145,20 @@ impl Handler<Disconnect> for ChatServer {
             }
         }
         //this should send a message that the user left the current chat channel.
-        for room in rooms {
-            self.send_message(
-                "main",
-                &json!({
-                    "room": room,
-                    "value": vec![format!("Someone disconnect!")],
-                    "chat_type": session::ChatType::DISCONNECT
-                })
-                .to_string(),
-                0,
-            );
-        }
+        //and you should leave the room ()
+
+        let (current_room, current_user) = get_user_and_room(&mut self.pool, msg.id.to_string());
+
+        self.send_message(
+            &current_room.id,
+            &json!({
+                "room": current_room.name,
+                "value": current_user.username,
+                "chat_type": session::ChatType::DISCONNECT
+            })
+            .to_string(),
+            0,
+        );
     }
 }
 impl Handler<ClientMessage> for ChatServer {

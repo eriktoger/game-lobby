@@ -66,6 +66,7 @@ export default function Main({ auth, setAuthUser }: any) {
             ]);
             break;
           }
+          case "DISCONNECT":
           case "LEAVE": {
             console.log("leave", { messageData });
             setUsers((prev: any[]) => {
