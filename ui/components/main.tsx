@@ -143,9 +143,9 @@ export default function Main({ auth, setAuthUser }: any) {
       </aside>
 
       {room?.id && (
-        <section className="rounded-r-[25px] w-full max-w-[690px] grid grid-rows-[80px_minmax(450px,_1fr)_65px]">
+        <section className="rounded-r-[25px] w-full max-w-[690px] grid grid-rows-[80px_80px_minmax(450px,_1fr)_65px]">
           <div>{auth?.username}</div>
-          <div className="rounded-tr-[25px] w-ful">
+          <div className="rounded-tr-[25px] w-full h-16">
             <div className="flex gap-3 p-3 items-center">
               <p className="font-semibold text-gray-600 text-base">
                 {room.name}

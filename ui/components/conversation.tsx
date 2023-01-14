@@ -50,7 +50,7 @@ export default function Conversation({
   }, [data]);
   console.log({ auth });
   return (
-    <div className="p-4 space-y-4 overflow-auto" ref={ref}>
+    <div className="p-4 space-y-4 overflow-auto h-full" ref={ref}>
       {data.map((item) => {
         return (
           <ConversationItem
