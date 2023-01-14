@@ -19,11 +19,11 @@ export default function useRooms() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
-  const fetchRoomData = async (room_id: string) => {
+  const fetchRoomData = async (room_id: string, user: User) => {
     setIsLoading(true);
     const data = await fetchRoom(room_id);
-    console.log("from fetch room: ", { data });
-    setUsers(data.users);
+    console.log("from fetch room: ", { data, user });
+    setUsers([...data.users, user]);
     setMessages(data.messages);
     setIsLoading(false);
   };

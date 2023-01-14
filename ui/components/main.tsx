@@ -113,7 +113,7 @@ export default function Main({ auth, setAuthUser }: any) {
 
   const onChangeRoom = async (room: Room) => {
     if (!room.id) return;
-    await fetchRoomData(room.id);
+    await fetchRoomData(room.id, auth);
     setSelectedRoom(room);
 
     const joinRoom = {

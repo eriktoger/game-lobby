@@ -91,7 +91,7 @@ export default function ChatList({
       <div>
         <p>Users</p>
         {users.map((user: any) => (
-          <p key={user.id}>{user.username}</p>
+          <p key={user.usename}>{user.username}</p>
         ))}
       </div>
     </div>
