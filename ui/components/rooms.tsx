@@ -73,7 +73,7 @@ export default function ChatList({
       setLoading(false);
     });
   }, []);
-
+  console.log({ users });
   return (
     <div className="overflow-hidden space-y-3">
       {isLoading && <p>Loading chat lists.</p>}
@@ -91,7 +91,7 @@ export default function ChatList({
       <div>
         <p>Users</p>
         {users.map((user: any) => (
-          <p key={user.usename}>{user.username}</p>
+          <p key={user.username}>{user.username}</p>
         ))}
       </div>
     </div>

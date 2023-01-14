@@ -107,10 +107,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             input.value.clone(),
                         );
                         let msg = serde_json::to_string(input).unwrap();
+                        let current_room =
+                            db::get_current_room(&mut conn, self.id.to_string()).unwrap();
                         self.addr.do_send(server::ClientMessage {
                             id: self.id,
                             msg,
-                            room: self.room.clone(),
+                            room: current_room.id,
                         })
                     }
                     ChatType::JOIN => {

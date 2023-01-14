@@ -7,7 +7,7 @@ import Login from "../components/login";
 import useRooms from "../libs/useRooms";
 import useLocalStorage from "../libs/useLocalStorage";
 import useWebsocket from "../libs/useWebsocket";
-import { Message, Room, User } from "./types";
+import { ChatMessage, Message, Room, User } from "./types";
 
 export default function Main({ auth, setAuthUser }: any) {
   const [room, setSelectedRoom] = useState<Room | null>(null);
@@ -37,14 +37,14 @@ export default function Main({ auth, setAuthUser }: any) {
         let messageData = JSON.parse(data);
         switch (messageData.chat_type) {
           case "TEXT": {
-            handleMessage(messageData.value[0], messageData.user_id);
+            handleMessage(messageData.value, messageData.user_id);
             break;
           }
           case "CONNECT": {
             console.log(1, { messageData, auth });
             auth?.id &&
               fetch(
-                `http://localhost:8080/users/${auth.id}/session/${messageData.value[0]}`,
+                `http://localhost:8080/users/${auth.id}/session/${messageData.value}`,
                 {
                   method: "POST",
                   headers: {
@@ -99,11 +99,9 @@ export default function Main({ auth, setAuthUser }: any) {
       return;
     }
 
-    const data = {
-      id: 0,
+    const data: ChatMessage = {
       chat_type: "TEXT",
-      value: [message],
-      room_id: room.id,
+      value: message,
       user_id: auth.id,
     };
     sendMessage(JSON.stringify(data));

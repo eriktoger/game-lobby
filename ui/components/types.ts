@@ -20,3 +20,8 @@ export type User = {
   web_socket_session: string;
   created_at: string;
 };
+export type ChatMessage = {
+  chat_type: "JOIN" | "CONNECT" | "TEXT" | "LEAVE" | "DISCONNECT";
+  value: string;
+  user_id: string;
+};
