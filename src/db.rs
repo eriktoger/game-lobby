@@ -180,7 +180,7 @@ pub fn get_current_room_with_users(
     use crate::schema::users;
 
     let users_data: Vec<User> = users::table.get_results(conn)?;
-    let current_room = get_current_room(conn, ws_id)?;
+    let current_room = get_current_room(conn, ws_id).unwrap();
 
     let rooms_to_user_data: Vec<RoomToUser> = room_to_users
         .filter(room.eq(current_room.id.clone()))
@@ -256,27 +256,30 @@ pub fn leave_room(
 ) -> Result<(), DbError> {
     use crate::schema::room_to_users::dsl::*;
 
+    println!("before leaving room db");
     diesel::delete(room_to_users.filter(room.eq(room_id)))
         .filter(user.eq(user_id))
         .execute(conn)?;
-
+    println!("after leaving room db");
     Ok(())
 }
 
-pub fn get_current_room<'a>(
-    conn: &'a mut SqliteConnection,
-    ws_id: String,
-) -> Result<Room, diesel::result::Error> {
+pub fn get_current_room<'a>(conn: &'a mut SqliteConnection, ws_id: String) -> Option<Room> {
     use crate::schema::room_to_users;
     use crate::schema::rooms::dsl::*;
     let current_user = find_user_by_ws(conn, ws_id);
     let rooms_data: Vec<RoomToUser> = room_to_users::table.get_results(conn).unwrap();
 
-    let exists = rooms_data
-        .iter()
-        .find(|x| x.user == current_user.id)
-        .unwrap();
-    rooms
-        .filter(id.eq(exists.room.to_string()))
-        .first::<Room>(conn)
+    let exists = rooms_data.iter().find(|x| x.user == current_user.id);
+
+    if exists.is_none() {
+        return None;
+    }
+    let r = exists.unwrap();
+    Some(
+        rooms
+            .filter(id.eq((r.room).to_string()))
+            .first::<Room>(conn)
+            .unwrap(),
+    )
 }

@@ -19,6 +19,7 @@ async fn main() -> std::io::Result<()> {
     let conn_spec = "chat.db";
     let manager = ConnectionManager::<SqliteConnection>::new(conn_spec);
     let pool = r2d2::Pool::builder()
+        .max_size(1) // https://stackoverflow.com/questions/57123453/how-to-use-diesel-with-sqlite-connections-and-avoid-database-is-locked-type-of
         .build(manager)
         .expect("Failed to create pool.");
     let server_addr = "127.0.0.1";

@@ -66,23 +66,22 @@ impl ChatServer {
         println!("sending message {} {}", message, room);
         let mut conn = self.pool.get().unwrap();
 
-        let current_room = db::get_current_room(&mut conn, ws_id.to_string());
-        let rooms = db::get_rooms_with_users(&mut conn).unwrap();
-        let current_rr = db::get_current_room_with_users(&mut conn, ws_id.to_string()).unwrap();
+        let receivers = db::get_users_in_room(&mut conn, room.to_string()).unwrap();
         //let room_members = db::get_room_members(skip_id);
-        println!("ws_id {:?} ", ws_id);
+        //println!("current_rr {:?} ", current_rr);
         // room is the actuall id to the room, we could just find it in rooms
 
-        for usr in current_rr.users {
-            let id = usr.web_socket_session;
+        for receiver in receivers {
+            let id = receiver.web_socket_session;
             if id != ws_id.to_string() {
-                println!("{}-{}", id, ws_id);
+                //println!("{}-{}", id, ws_id);
                 if let Some(addr) = self.sessions.get(&id.parse::<usize>().unwrap()) {
-                    println!("Sending: {}", id);
+                    //println!("Sending: {}", id);
                     addr.do_send(Message(message.to_owned()));
                 }
             }
         }
+        println!("after sending message {}", room)
     }
     fn send_message_self(&self, room: &str, message: &str, self_id: usize) {
         if let Some(sessions) = self.rooms.get(room) {
@@ -103,7 +102,7 @@ impl Handler<Connect> for ChatServer {
     type Result = usize;
     fn handle(&mut self, msg: Connect, _: &mut Context<Self>) -> Self::Result {
         //this should not send a message right?
-        println!("msg: {:?}", msg);
+        //println!("msg: {:?}", msg);
         let id = self.rng.gen::<usize>();
         self.sessions.insert(id, msg.addr);
         self.rooms
@@ -152,7 +151,7 @@ impl Handler<ClientMessage> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: ClientMessage, _: &mut Self::Context) -> Self::Result {
-        println!("handle message");
+        //println!("handle message");
         self.send_message(&msg.room, &msg.msg, msg.id);
     }
 }
@@ -169,7 +168,7 @@ impl Handler<ListRooms> for ChatServer {
 impl Handler<Join> for ChatServer {
     type Result = ();
     fn handle(&mut self, msg: Join, _: &mut Self::Context) -> Self::Result {
-        println!("joining chat room");
+        //println!("joining chat room");
         let Join { id, name } = msg;
         let mut rooms = vec![];
         for (n, sessions) in &mut self.rooms {

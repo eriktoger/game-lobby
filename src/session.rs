@@ -1,3 +1,4 @@
+use crate::models::User;
 use crate::server;
 use crate::{db, models::NewMessage};
 use actix::prelude::*;
@@ -113,28 +114,47 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         })
                     }
                     ChatType::JOIN => {
-                        println!("Joining {:?}", input);
+                        //println!("Joining {:?}", input);
                         let mut conn = self.db_pool.get().unwrap();
                         let current_room = db::get_current_room(&mut conn, self.id.to_string());
 
-                        println!("Joining {:?}", current_room);
+                        //println!("Joining {:?}", current_room);
                         // send to each user in the room (and to her self?)
                         // and that user needs to add the user to its users-list
                         let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
+
                         match current_room {
-                            Ok(r) => {
+                            Some(r) => {
                                 if r.id == input.value {
                                     return; // we are already in the room
                                 } else {
                                     //we should leave the room and join another
-                                    let _ = db::leave_room(&mut conn, &r.id, &current_user.id);
 
+                                    let chat_msg = ChatMessage {
+                                        chat_type: ChatType::LEAVE,
+                                        value: current_user.username.clone(), //to tell who has left
+                                        user_id: current_user.id.clone(),
+                                    };
+                                    let msg = serde_json::to_string(&chat_msg).unwrap();
+
+                                    // the problem is that do_send is async the acutal sending happens after leave_room
+                                    // which causes the message to be sent to the room wrong
+                                    //maybe just use room.id instead?
+                                    self.addr.do_send(server::ClientMessage {
+                                        id: self.id,
+                                        msg,
+                                        room: r.id.clone(),
+                                    });
+                                    println!("before leaving room");
+                                    let _ = db::leave_room(&mut conn, &r.id, &current_user.id);
+                                    println!("middle");
                                     let _ =
                                         db::join_room(&mut conn, &input.value, &current_user.id);
+                                    println!("after joining room");
                                 }
                             }
 
-                            Err(_) => {
+                            None => {
                                 let _ = db::join_room(&mut conn, &input.value, &current_user.id);
                             } //we should only join a room
                         }
@@ -143,6 +163,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         // join the room (if we are not already in it)
                         // leave our old room if we have one
                         // send the appropriate messages to the old and new room
+
                         let chat_msg = ChatMessage {
                             chat_type: ChatType::JOIN,
                             value: current_user.username, //to tell who has joined

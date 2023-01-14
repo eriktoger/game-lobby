@@ -7,7 +7,7 @@ import Login from "../components/login";
 import useRooms from "../libs/useRooms";
 import useLocalStorage from "../libs/useLocalStorage";
 import useWebsocket from "../libs/useWebsocket";
-import { Message, Room } from "./types";
+import { Message, Room, User } from "./types";
 
 export default function Main({ auth, setAuthUser }: any) {
   const [room, setSelectedRoom] = useState<Room | null>(null);
@@ -38,7 +38,7 @@ export default function Main({ auth, setAuthUser }: any) {
         switch (messageData.chat_type) {
           case "TEXT": {
             handleMessage(messageData.value[0], messageData.user_id);
-            return;
+            break;
           }
           case "CONNECT": {
             console.log(1, { messageData, auth });
@@ -55,10 +55,27 @@ export default function Main({ auth, setAuthUser }: any) {
             //use this data to update the user and give it the websocket-id
             //so that you can use it to send messages when we only have the user_id
             //But it still seems to be a work around.
+            break;
           }
+
           case "JOIN": {
             console.log({ messageData });
-            setUsers((prev: any) => [...prev, { username: messageData.value }]);
+            setUsers((prev: any[]) => [
+              ...prev,
+              { username: messageData.value },
+            ]);
+            break;
+          }
+          case "LEAVE": {
+            console.log("leave", { messageData });
+            setUsers((prev: any[]) => {
+              const newArray = [
+                ...prev.filter((user) => user.username !== messageData.value),
+              ];
+              console.log({ prev, newArray });
+              return newArray;
+            });
+            break;
           }
         }
       } catch (e) {
