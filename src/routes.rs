@@ -86,9 +86,13 @@ pub async fn get_data_from_room(
     let room_id = uid.to_owned();
     let (messages, users) = web::block(move || {
         let mut conn = pool.get().unwrap();
+        //this one needs to have Usernames in them (To display them correctly)
+        //content and username is enough
+        // I really need to learn how to join
         let m = db::get_messages_by_room_uid(&mut conn, room_id)
             .unwrap()
             .unwrap();
+
         let u = db::get_users_in_room(&mut conn, room_id.to_string()).unwrap();
 
         (m, u)

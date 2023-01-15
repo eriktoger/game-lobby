@@ -4,6 +4,7 @@ use crate::{
 };
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, time::SystemTime};
 use uuid::Uuid;
 type DbError = Box<dyn std::error::Error + Send + Sync>;
@@ -61,16 +62,40 @@ pub fn find_user_by_phone(
     Ok(user)
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Convo {
+    pub content: String,
+    pub username: String,
+}
+
 pub fn get_messages_by_room_uid(
     conn: &mut SqliteConnection,
     uid: Uuid,
 ) -> Result<Option<Vec<Message>>, DbError> {
     use crate::schema::messages;
+    use crate::schema::messages::dsl::{content, user_id};
+    use crate::schema::users;
+    use crate::schema::users::dsl::{id, username};
 
     let convo = messages::table
         .filter(messages::room_id.eq(uid.to_string()))
         .load(conn)
         .optional()?;
+    //.inner_join(posts.on(title.like(name.concat("%"))))
+    //it works! Where should Convo live and what should it be called?
+    //Maybe MessageData? or DisplayMessage
+    let join1: Vec<(String, String)> = messages::table
+        .inner_join(users::table.on(id.eq(user_id)))
+        .select((username, content))
+        .load(conn)?;
+    let j: Vec<Convo> = join1
+        .iter()
+        .map(|(u, c)| Convo {
+            username: u.to_string(),
+            content: c.to_string(),
+        })
+        .collect();
+    println!("join1 {:?}", j);
 
     Ok(convo)
 }
