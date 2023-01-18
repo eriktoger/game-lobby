@@ -31,14 +31,11 @@ export default function Main({ auth, setAuthUser }: any) {
     async (data: any) => {
       try {
         let messageData = JSON.parse(data) as ChatMessage;
-
         switch (messageData.chat_type) {
           case "TEXT": {
-            //should be cached
-            const { username } = await (
-              await fetch(`http://localhost:8080/users/${messageData.user_id}`)
-            ).json();
-            handleMessage(messageData.value, username);
+            //should be in try catch or something...
+            const { content, username } = JSON.parse(messageData.value);
+            handleMessage(content, username);
             break;
           }
           case "CONNECT": {
@@ -97,10 +94,13 @@ export default function Main({ auth, setAuthUser }: any) {
       alert("Please select chat room!");
       return;
     }
-
+    const displayMessage = {
+      content: message,
+      username: auth.username,
+    };
     const data: ChatMessage = {
       chat_type: "TEXT",
-      value: message,
+      value: JSON.stringify(displayMessage),
       user_id: auth.id,
     };
     sendMessage(JSON.stringify(data));
