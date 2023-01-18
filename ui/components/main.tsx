@@ -7,41 +7,41 @@ import Login from "../components/login";
 import useRooms from "../libs/useRooms";
 import useLocalStorage from "../libs/useLocalStorage";
 import useWebsocket from "../libs/useWebsocket";
-import { ChatMessage, Message, Room, User } from "./types";
+import { ChatMessage, DisplayMessage, Message, Room, User } from "./types";
 
 export default function Main({ auth, setAuthUser }: any) {
   const [room, setSelectedRoom] = useState<Room | null>(null);
   const { isLoading, users, setUsers, messages, setMessages, fetchRoomData } =
     useRooms();
 
-  console.log({ users });
   const handleMessage = useCallback(
-    (content: string, userId: any) => {
-      setMessages((prev: Message[]) => {
-        const item: Message = {
-          id: Math.random().toString(),
+    (content: string, username: string) => {
+      setMessages((prev: DisplayMessage[]) => {
+        const item: DisplayMessage = {
           content,
-          user_id: userId,
-          room_id: room?.id ?? "",
-          created_at: Date.now().toString(),
+          username,
         };
         return [...prev, item];
       });
     },
-    [room?.id, setMessages]
+    [setMessages]
   );
 
   const onMessage = useCallback(
-    (data: any) => {
+    async (data: any) => {
       try {
-        let messageData = JSON.parse(data);
+        let messageData = JSON.parse(data) as ChatMessage;
+
         switch (messageData.chat_type) {
           case "TEXT": {
-            handleMessage(messageData.value, messageData.user_id);
+            //should be cached
+            const { username } = await (
+              await fetch(`http://localhost:8080/users/${messageData.user_id}`)
+            ).json();
+            handleMessage(messageData.value, username);
             break;
           }
           case "CONNECT": {
-            console.log(1, { messageData, auth });
             auth?.id &&
               fetch(
                 `http://localhost:8080/users/${auth.id}/session/${messageData.value}`,
@@ -59,7 +59,6 @@ export default function Main({ auth, setAuthUser }: any) {
           }
 
           case "JOIN": {
-            console.log({ messageData });
             setUsers((prev: any[]) => [
               ...prev,
               { username: messageData.value },
@@ -68,12 +67,11 @@ export default function Main({ auth, setAuthUser }: any) {
           }
           case "DISCONNECT":
           case "LEAVE": {
-            console.log("leave", { messageData });
             setUsers((prev: any[]) => {
               const newArray = [
                 ...prev.filter((user) => user.username !== messageData.value),
               ];
-              console.log({ prev, newArray });
+
               return newArray;
             });
             break;
@@ -107,7 +105,7 @@ export default function Main({ auth, setAuthUser }: any) {
     };
     sendMessage(JSON.stringify(data));
     e.target.message.value = "";
-    handleMessage(message, auth.id);
+    handleMessage(message, auth.username);
   };
 
   const onChangeRoom = async (room: Room) => {
@@ -121,7 +119,6 @@ export default function Main({ auth, setAuthUser }: any) {
       value: room.id,
       user_id: auth?.id,
     };
-    console.log({ joinRoom });
     sendMessage(JSON.stringify(joinRoom));
   };
 
@@ -156,7 +153,7 @@ export default function Main({ auth, setAuthUser }: any) {
           {isLoading && room.id && (
             <p className="px-4 text-slate-500">Loading conversation...</p>
           )}
-          <Conversation data={messages} auth={auth} users={users} />
+          <Conversation data={messages} auth={auth} />
           <div className="w-full">
             <form
               onSubmit={submitMessage}

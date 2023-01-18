@@ -12,6 +12,10 @@ export type Message = {
   content: string;
   created_at: string;
 };
+export type DisplayMessage = {
+  username: string;
+  content: string;
+};
 
 export type User = {
   id: string;

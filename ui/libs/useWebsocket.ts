@@ -1,7 +1,6 @@
 import { useEffect, useRef } from "react";
 export default function useWebsocket(onMessage: any) {
   const ws = useRef<any>(null);
-  console.log("Use websockets");
   useEffect(() => {
     if (ws.current !== null) return;
     const wsUri = "ws://localhost:8080/ws";

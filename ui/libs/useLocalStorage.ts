@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 export default function useLocalStorage(key: any, defaultValue: any) {
   const [storedValue, setStoredValue] = useState(defaultValue);
-  console.log(storedValue);
   const setValue = (value: any) => {
     try {
       const valueToStore =

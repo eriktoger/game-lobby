@@ -68,12 +68,11 @@ export default function ChatList({
   useEffect(() => {
     setLoading(true);
     getRooms().then((data) => {
-      console.log(1, { data });
       setRooms(data);
       setLoading(false);
     });
   }, []);
-  console.log({ users });
+
   return (
     <div className="overflow-hidden space-y-3">
       {isLoading && <p>Loading chat lists.</p>}

@@ -1,6 +1,5 @@
-use crate::models::User;
+use crate::db;
 use crate::server;
-use crate::{db, models::NewMessage};
 use actix::prelude::*;
 use actix_web::web;
 use actix_web_actors::ws;
@@ -116,13 +115,9 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         })
                     }
                     ChatType::JOIN => {
-                        //println!("Joining {:?}", input);
                         let mut conn = self.db_pool.get().unwrap();
                         let current_room = db::get_current_room(&mut conn, self.id.to_string());
 
-                        //println!("Joining {:?}", current_room);
-                        // send to each user in the room (and to her self?)
-                        // and that user needs to add the user to its users-list
                         let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
 
                         match current_room {
@@ -147,12 +142,10 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                                         msg,
                                         room: r.id.clone(),
                                     });
-                                    println!("before leaving room");
+
                                     let _ = db::leave_room(&mut conn, &r.id, &current_user.id);
-                                    println!("middle");
                                     let _ =
                                         db::join_room(&mut conn, &input.value, &current_user.id);
-                                    println!("after joining room");
                                 }
                             }
 
@@ -179,6 +172,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         })
                     }
                     ChatType::LEAVE => {
+                        //Not sure when this should be called
                         println!("LEAVING{:?}", input);
                     }
                     _ => {}

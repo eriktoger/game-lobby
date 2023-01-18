@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Message, User } from "../components/types";
+import { DisplayMessage, Message, User } from "../components/types";
 
 const fetchRoom = async (room_id: string) => {
   const url = `http://localhost:8080/rooms/${room_id}/data`;
@@ -16,13 +16,12 @@ const fetchRoom = async (room_id: string) => {
 //then let current game be its own context?
 export default function useRooms() {
   const [isLoading, setIsLoading] = useState(true);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [users, setUsers] = useState<User[]>([]);
 
   const fetchRoomData = async (room_id: string, user: User) => {
     setIsLoading(true);
     const data = await fetchRoom(room_id);
-    console.log("from fetch room: ", { data, user });
     setUsers([...data.users, user]);
     setMessages(data.messages);
     setIsLoading(false);

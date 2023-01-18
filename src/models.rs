@@ -51,7 +51,7 @@ pub struct RoomResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RoomData {
     pub users: Vec<User>,
-    pub messages: Vec<Message>,
+    pub messages: Vec<DisplayMessage>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -64,4 +64,10 @@ pub struct RoomToUser {
     pub id: String,
     pub room: String,
     pub user: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DisplayMessage {
+    pub content: String,
+    pub username: String,
 }

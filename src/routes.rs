@@ -89,9 +89,7 @@ pub async fn get_data_from_room(
         //this one needs to have Usernames in them (To display them correctly)
         //content and username is enough
         // I really need to learn how to join
-        let m = db::get_messages_by_room_uid(&mut conn, room_id)
-            .unwrap()
-            .unwrap();
+        let m = db::get_display_messages_by_room_uid(&mut conn, room_id).unwrap();
 
         let u = db::get_users_in_room(&mut conn, room_id.to_string()).unwrap();
 

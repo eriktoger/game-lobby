@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import Avatar from "./avatar";
+import { DisplayMessage, User } from "./types";
 
 function ConversationItem({
   right,
@@ -38,26 +39,23 @@ function ConversationItem({
 export default function Conversation({
   data,
   auth,
-  users,
 }: {
-  data: any[];
-  auth: any;
-  users: any;
+  data: DisplayMessage[];
+  auth: User;
 }) {
   const ref = useRef<any>(null);
   useEffect(() => {
     ref.current?.scrollTo(0, ref.current.scrollHeight);
   }, [data]);
-  console.log({ auth });
   return (
     <div className="p-4 space-y-4 overflow-auto h-full" ref={ref}>
-      {data.map((item) => {
+      {data.map((item, i) => {
         return (
           <ConversationItem
-            right={item.user_id === auth.id}
+            right={item.username === auth.username}
             content={item.content}
-            username={users.find((u: any) => u.id === item.user_id)?.username}
-            key={item.id}
+            username={item.username}
+            key={i}
           />
         );
       })}
