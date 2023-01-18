@@ -5,5 +5,6 @@ VALUES
 INSERT INTO rooms(id, name, created_at)
 VALUES
 ("f061383b-0393-4ce8-9a85-f31d03762263", "General Chat",  "2022-12-23T07:56:30.214162+00:00"),
-("008e9dc4-f01d-4429-ba31-986d7e63cce8", "Black Jack",  "2022-12-23T07:56:30.214162+00:00");
+("008e9dc4-f01d-4429-ba31-986d7e63cce8", "Black Jack",  "2022-12-23T07:56:30.214162+00:00"),
+("7ec17a18-9747-11ed-8ce3-17c8af9264f0", "Tic Tac Toe",  "2022-12-23T07:56:30.214162+00:00");
  
