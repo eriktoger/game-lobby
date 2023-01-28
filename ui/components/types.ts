@@ -29,3 +29,9 @@ export type ChatMessage = {
   value: string;
   user_id: string;
 };
+
+export type TicTacToeMove = {
+  row: number;
+  column: number;
+  player: string;
+};

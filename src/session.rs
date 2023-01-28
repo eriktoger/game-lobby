@@ -1,4 +1,5 @@
 use crate::db;
+use crate::models::DisplayMessage;
 use crate::server;
 use actix::prelude::*;
 use actix_web::web;
@@ -100,10 +101,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         let input = data_json.as_ref().unwrap();
 
                         let mut conn = self.db_pool.get().unwrap();
+                        let display_message =
+                            serde_json::from_str::<DisplayMessage>(&input.value).unwrap();
                         let _ = db::insert_new_message(
                             &mut conn,
                             self.id.to_string(),
-                            input.value.clone(),
+                            display_message.content,
                         );
                         let msg = serde_json::to_string(input).unwrap();
                         let current_room =

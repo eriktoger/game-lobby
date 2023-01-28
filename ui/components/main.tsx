@@ -7,12 +7,22 @@ import Login from "../components/login";
 import useRooms from "../libs/useRooms";
 import useLocalStorage from "../libs/useLocalStorage";
 import useWebsocket from "../libs/useWebsocket";
-import { ChatMessage, DisplayMessage, Message, Room, User } from "./types";
+import {
+  ChatMessage,
+  DisplayMessage,
+  Message,
+  Room,
+  TicTacToeMove,
+  User,
+} from "./types";
+import { Board } from "./games/TicTacToe/board";
 
 export default function Main({ auth, setAuthUser }: any) {
   const [room, setSelectedRoom] = useState<Room | null>(null);
+  const [openGame, setOpenGame] = useState(false);
   const { isLoading, users, setUsers, messages, setMessages, fetchRoomData } =
     useRooms();
+  const [moves, setMoves] = useState<TicTacToeMove[]>([]);
 
   const handleMessage = useCallback(
     (content: string, username: string) => {
@@ -127,10 +137,22 @@ export default function Main({ auth, setAuthUser }: any) {
     setAuthUser(false);
   };
 
+  if (openGame) {
+    return (
+      <Board
+        onClose={() => setOpenGame(false)}
+        gameId={"1"}
+        moves={moves}
+        playerId={auth.id}
+      />
+    );
+  }
+
   return (
     <main className="flex w-full max-w-[1020px] h-[700px] mx-auto bg-[#FAF9FE] rounded-[25px] backdrop-opacity-30 opacity-95">
       <aside className="bg-[#F0EEF5] w-[325px] h-[700px] rounded-l-[25px] p-4 overflow-auto relative">
         <ChatList onChangeRoom={onChangeRoom} userId={auth.id} users={users} />
+        <button onClick={() => setOpenGame(true)}> Open game</button>
         <button
           onClick={signOut}
           className="text-xs w-full max-w-[295px] p-3 rounded-[10px] bg-violet-200 font-semibold text-violet-600 text-center absolute bottom-4"
