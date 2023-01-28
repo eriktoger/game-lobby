@@ -52,6 +52,7 @@ pub struct RoomResponse {
 pub struct RoomData {
     pub users: Vec<User>,
     pub messages: Vec<DisplayMessage>,
+    pub games: Vec<TicTacToeGame>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -71,3 +72,19 @@ pub struct DisplayMessage {
     pub content: String,
     pub username: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable)]
+pub struct TicTacToeGame {
+    pub id: String,
+    pub player_1: String,
+    pub player_2: Option<String>,
+    pub game_status: String,
+    pub created_at: String,
+}
+
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub struct NewGame {
+//     pub username: String,
+//     pub user_id: String,
+//     pub game_name: String,
+// }

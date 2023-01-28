@@ -25,10 +25,18 @@ export type User = {
   created_at: string;
 };
 export type ChatMessage = {
-  chat_type: "JOIN" | "CONNECT" | "TEXT" | "LEAVE" | "DISCONNECT";
+  chat_type:
+    | "JOIN"
+    | "CONNECT"
+    | "TEXT"
+    | "LEAVE"
+    | "DISCONNECT"
+    | "CREATEGAME";
   value: string;
   user_id: string;
 };
+
+export type NewGame = {};
 
 export type TicTacToeMove = {
   row: number;

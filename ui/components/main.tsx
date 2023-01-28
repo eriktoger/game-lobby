@@ -19,7 +19,7 @@ import { Board } from "./games/TicTacToe/board";
 
 export default function Main({ auth, setAuthUser }: any) {
   const [room, setSelectedRoom] = useState<Room | null>(null);
-  const [openGame, setOpenGame] = useState(false);
+  const [gameId, setGameId] = useState<null | string>(null);
   const { isLoading, users, setUsers, messages, setMessages, fetchRoomData } =
     useRooms();
   const [moves, setMoves] = useState<TicTacToeMove[]>([]);
@@ -83,6 +83,16 @@ export default function Main({ auth, setAuthUser }: any) {
             });
             break;
           }
+          case "CREATEGAME": {
+            console.log(messageData);
+            if (messageData.user_id == auth.id) {
+              setGameId(messageData.value);
+            } else {
+              //add it to games array
+              //this should be loaded when you enter the room as well
+            }
+            break;
+          }
         }
       } catch (e) {
         console.log(e);
@@ -137,11 +147,11 @@ export default function Main({ auth, setAuthUser }: any) {
     setAuthUser(false);
   };
 
-  if (openGame) {
+  if (gameId) {
     return (
       <Board
-        onClose={() => setOpenGame(false)}
-        gameId={"1"}
+        onClose={() => setGameId(null)}
+        gameId={gameId}
         moves={moves}
         playerId={auth.id}
       />
@@ -152,7 +162,19 @@ export default function Main({ auth, setAuthUser }: any) {
     <main className="flex w-full max-w-[1020px] h-[700px] mx-auto bg-[#FAF9FE] rounded-[25px] backdrop-opacity-30 opacity-95">
       <aside className="bg-[#F0EEF5] w-[325px] h-[700px] rounded-l-[25px] p-4 overflow-auto relative">
         <ChatList onChangeRoom={onChangeRoom} userId={auth.id} users={users} />
-        <button onClick={() => setOpenGame(true)}> Open game</button>
+        <button
+          onClick={() => {
+            const newGame: ChatMessage = {
+              chat_type: "CREATEGAME",
+              value: "Tic_Tac_Toe",
+              user_id: auth.id,
+            };
+            sendMessage(JSON.stringify(newGame));
+          }}
+        >
+          {" "}
+          Open game
+        </button>
         <button
           onClick={signOut}
           className="text-xs w-full max-w-[295px] p-3 rounded-[10px] bg-violet-200 font-semibold text-violet-600 text-center absolute bottom-4"

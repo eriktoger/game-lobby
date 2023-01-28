@@ -84,7 +84,7 @@ pub async fn get_data_from_room(
     uid: web::Path<Uuid>,
 ) -> Result<HttpResponse, Error> {
     let room_id = uid.to_owned();
-    let (messages, users) = web::block(move || {
+    let (messages, users, games) = web::block(move || {
         let mut conn = pool.get().unwrap();
         //this one needs to have Usernames in them (To display them correctly)
         //content and username is enough
@@ -93,10 +93,16 @@ pub async fn get_data_from_room(
 
         let u = db::get_users_in_room(&mut conn, room_id.to_string()).unwrap();
 
-        (m, u)
+        let g = db::get_games_in_room(&mut conn, room_id.to_string()).unwrap();
+
+        (m, u, g)
     })
     .await?;
-    let room_response = RoomData { users, messages };
+    let room_response = RoomData {
+        users,
+        messages,
+        games,
+    };
     Ok(HttpResponse::Ok().json(room_response))
 }
 #[get("/users/phone/{user_phone}")]
@@ -179,3 +185,18 @@ pub async fn join_room(
     .map_err(actix_web::error::ErrorUnprocessableEntity)?;
     Ok(HttpResponse::Ok().json(joined))
 }
+
+//this sould be a web-socket thing instead
+// #[post("/games/tic_tac_toe")]
+// pub async fn create_tic_tac_toe(
+//     pool: web::Data<DbPool>,
+//     form: web::Json<models::NewRoomToUser>,
+// ) -> Result<HttpResponse, Error> {
+//     let joined = web::block(move || {
+//         let mut conn = pool.get()?;
+//         db::create_tic_tac_toe(&mut conn, &form.room, &form.user)
+//     })
+//     .await?
+//     .map_err(actix_web::error::ErrorUnprocessableEntity)?;
+//     Ok(HttpResponse::Ok().json(joined))
+// }

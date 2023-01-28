@@ -32,6 +32,7 @@ pub enum ChatType {
     LEAVE, // Leave a room (volentary disconnect I guess)
     CONNECT,
     DISCONNECT,
+    CREATEGAME,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -177,6 +178,30 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                     ChatType::LEAVE => {
                         //Not sure when this should be called
                         println!("LEAVING{:?}", input);
+                    }
+                    ChatType::CREATEGAME => {
+                        //we may use the fact that it is a tic-tac-toe -game later
+                        //let input = data_json.as_ref().unwrap();
+
+                        let mut conn = self.db_pool.get().unwrap();
+                        let game_id =
+                            db::create_tic_tac_toe(&mut conn, self.id.to_string()).unwrap();
+
+                        let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
+                        let chat_msg = ChatMessage {
+                            chat_type: ChatType::CREATEGAME,
+                            value: game_id,
+                            user_id: current_user.id,
+                        };
+
+                        let msg = serde_json::to_string(&chat_msg).unwrap();
+                        let current_room =
+                            db::get_current_room(&mut conn, self.id.to_string()).unwrap();
+                        self.addr.do_send(server::ClientMessage {
+                            id: 0, //sends it to yourself as well
+                            msg,
+                            room: current_room.id,
+                        })
                     }
                     _ => {}
                 }

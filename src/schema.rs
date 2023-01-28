@@ -27,6 +27,26 @@ diesel::table! {
 }
 
 diesel::table! {
+    tic_tac_toe_games (id) {
+        id -> Text,
+        player_1 -> Text,
+        player_2 -> Nullable<Text>,
+        game_status -> Text,
+        created_at -> Text,
+    }
+}
+
+diesel::table! {
+    tic_tac_toe_moves (id) {
+        id -> Text,
+        game_id -> Text,
+        row_number -> Text,
+        col_number -> Text,
+        created_at -> Text,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Text,
         username -> Text,
@@ -40,5 +60,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     messages,
     room_to_users,
     rooms,
+    tic_tac_toe_games,
+    tic_tac_toe_moves,
     users,
 );

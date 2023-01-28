@@ -1,4 +1,4 @@
-use crate::models::{DisplayMessage, Message, Room, RoomResponse, RoomToUser, User};
+use crate::models::{DisplayMessage, Message, Room, RoomResponse, RoomToUser, TicTacToeGame, User};
 use chrono::{DateTime, Utc};
 use diesel::prelude::*;
 use std::{collections::HashMap, time::SystemTime};
@@ -228,6 +228,24 @@ pub fn get_users_in_room(
     Ok(current_users)
 }
 
+pub fn get_games_in_room(
+    conn: &mut SqliteConnection,
+    room_id: String,
+) -> Result<Vec<TicTacToeGame>, DbError> {
+    use crate::schema::tic_tac_toe_games;
+
+    use crate::schema::rooms::dsl::{id as r_id, rooms};
+
+    let r: Vec<Room> = rooms.filter(r_id.eq(room_id.clone())).get_results(conn)?;
+    if r.len() != 1 || r[0].name != "Tic Tac Toe" {
+        return Ok([].to_vec());
+    }
+
+    let games: Vec<TicTacToeGame> = tic_tac_toe_games::table.load(conn)?;
+
+    Ok(games)
+}
+
 pub fn join_room(
     conn: &mut SqliteConnection,
     room_id: &str,
@@ -287,4 +305,27 @@ pub fn get_current_room<'a>(conn: &'a mut SqliteConnection, ws_id: String) -> Op
             .first::<Room>(conn)
             .unwrap(),
     )
+}
+
+pub fn create_tic_tac_toe<'a>(
+    conn: &'a mut SqliteConnection,
+    ws_id: String,
+) -> Result<String, DbError> {
+    use crate::schema::tic_tac_toe_games::dsl::*;
+
+    let current_user = find_user_by_ws(conn, ws_id);
+
+    let new_game_id = Uuid::new_v4().to_string();
+    let new_game = TicTacToeGame {
+        id: new_game_id.clone(),
+        player_1: current_user.id,
+        player_2: None,
+        game_status: "Active".to_string(),
+        created_at: iso_date(),
+    };
+
+    diesel::insert_into(tic_tac_toe_games)
+        .values(&new_game)
+        .execute(conn)?;
+    Ok(new_game_id)
 }

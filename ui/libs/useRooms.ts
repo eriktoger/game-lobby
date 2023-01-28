@@ -18,6 +18,7 @@ export default function useRooms() {
   const [isLoading, setIsLoading] = useState(true);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [users, setUsers] = useState<User[]>([]);
+  const [games, setGames] = useState<User[]>([]);
 
   const fetchRoomData = async (room_id: string, user: User) => {
     setIsLoading(true);
@@ -25,7 +26,17 @@ export default function useRooms() {
     setUsers([...data.users, user]);
     setMessages(data.messages);
     setIsLoading(false);
+    setGames(data.games);
   };
 
-  return { isLoading, users, setUsers, messages, setMessages, fetchRoomData };
+  return {
+    isLoading,
+    users,
+    setUsers,
+    messages,
+    setMessages,
+    games,
+    setGames,
+    fetchRoomData,
+  };
 }
