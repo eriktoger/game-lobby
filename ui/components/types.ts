@@ -36,7 +36,18 @@ export type ChatMessage = {
   user_id: string;
 };
 
-export type NewGame = {};
+export type TicTacToeGame = {
+  id: string;
+  player_1: string;
+  player_2: string;
+  game_status: string;
+  created_at: string;
+};
+
+export interface DisplayGame extends TicTacToeGame {
+  player_1_name?: string;
+  playher_2_name?: string;
+}
 
 export type TicTacToeMove = {
   row: number;

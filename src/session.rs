@@ -165,7 +165,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
 
                         let chat_msg = ChatMessage {
                             chat_type: ChatType::JOIN,
-                            value: current_user.username, //to tell who has joined
+                            value: serde_json::to_string(&current_user).unwrap(), //to tell who has joined
                             user_id: current_user.id,
                         };
                         let msg = serde_json::to_string(&chat_msg).unwrap();
@@ -184,13 +184,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         //let input = data_json.as_ref().unwrap();
 
                         let mut conn = self.db_pool.get().unwrap();
-                        let game_id =
+                        let new_game =
                             db::create_tic_tac_toe(&mut conn, self.id.to_string()).unwrap();
 
                         let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
                         let chat_msg = ChatMessage {
                             chat_type: ChatType::CREATEGAME,
-                            value: game_id,
+                            value: serde_json::to_string(&new_game).unwrap(),
                             user_id: current_user.id,
                         };
 

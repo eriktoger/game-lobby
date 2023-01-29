@@ -1,5 +1,11 @@
 import { useState } from "react";
-import { DisplayMessage, Message, User } from "../components/types";
+import {
+  DisplayGame,
+  DisplayMessage,
+  Message,
+  TicTacToeGame,
+  User,
+} from "../components/types";
 
 const fetchRoom = async (room_id: string) => {
   const url = `http://localhost:8080/rooms/${room_id}/data`;
@@ -18,7 +24,7 @@ export default function useRooms() {
   const [isLoading, setIsLoading] = useState(true);
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [games, setGames] = useState<User[]>([]);
+  const [games, setGames] = useState<DisplayGame[]>([]);
 
   const fetchRoomData = async (room_id: string, user: User) => {
     setIsLoading(true);
@@ -26,7 +32,23 @@ export default function useRooms() {
     setUsers([...data.users, user]);
     setMessages(data.messages);
     setIsLoading(false);
-    setGames(data.games);
+
+    //this should be done on the backend.
+    const games = data.games
+      .map((game: TicTacToeGame) => ({
+        ...game,
+        player_1_name:
+          data.users.find((user: User) => user.id === game.player_1)
+            ?.username ?? null,
+        player_2_name:
+          data.users.find((user: User) => user.id === game.player_2)
+            ?.username ?? null,
+      }))
+      .filter(
+        (game: TicTacToeGame) =>
+          game.game_status === "Active" && game.player_2 == null
+      );
+    setGames(games);
   };
 
   return {

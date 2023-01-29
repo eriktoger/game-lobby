@@ -310,7 +310,7 @@ pub fn get_current_room<'a>(conn: &'a mut SqliteConnection, ws_id: String) -> Op
 pub fn create_tic_tac_toe<'a>(
     conn: &'a mut SqliteConnection,
     ws_id: String,
-) -> Result<String, DbError> {
+) -> Result<TicTacToeGame, DbError> {
     use crate::schema::tic_tac_toe_games::dsl::*;
 
     let current_user = find_user_by_ws(conn, ws_id);
@@ -327,5 +327,5 @@ pub fn create_tic_tac_toe<'a>(
     diesel::insert_into(tic_tac_toe_games)
         .values(&new_game)
         .execute(conn)?;
-    Ok(new_game_id)
+    Ok(new_game)
 }

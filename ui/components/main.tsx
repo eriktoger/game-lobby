@@ -1,17 +1,13 @@
-import Head from "next/head";
-import React, { useCallback, useEffect, useState } from "react";
-import Avatar from "../components/avatar";
+import { useCallback, useState } from "react";
 import ChatList from "../components/rooms";
 import Conversation from "../components/conversation";
-import Login from "../components/login";
 import useRooms from "../libs/useRooms";
-import useLocalStorage from "../libs/useLocalStorage";
 import useWebsocket from "../libs/useWebsocket";
 import {
   ChatMessage,
   DisplayMessage,
-  Message,
   Room,
+  TicTacToeGame,
   TicTacToeMove,
   User,
 } from "./types";
@@ -20,8 +16,16 @@ import { Board } from "./games/TicTacToe/board";
 export default function Main({ auth, setAuthUser }: any) {
   const [room, setSelectedRoom] = useState<Room | null>(null);
   const [gameId, setGameId] = useState<null | string>(null);
-  const { isLoading, users, setUsers, messages, setMessages, fetchRoomData } =
-    useRooms();
+  const {
+    isLoading,
+    users,
+    setUsers,
+    messages,
+    setMessages,
+    fetchRoomData,
+    games,
+    setGames,
+  } = useRooms();
   const [moves, setMoves] = useState<TicTacToeMove[]>([]);
 
   const handleMessage = useCallback(
@@ -66,10 +70,8 @@ export default function Main({ auth, setAuthUser }: any) {
           }
 
           case "JOIN": {
-            setUsers((prev: any[]) => [
-              ...prev,
-              { username: messageData.value },
-            ]);
+            const user = JSON.parse(messageData.value) as User;
+            setUsers((prev: any[]) => [...prev, user]);
             break;
           }
           case "DISCONNECT":
@@ -84,12 +86,24 @@ export default function Main({ auth, setAuthUser }: any) {
             break;
           }
           case "CREATEGAME": {
-            console.log(messageData);
+            const game = JSON.parse(messageData.value) as TicTacToeGame; // should be Display game from backend
             if (messageData.user_id == auth.id) {
               setGameId(messageData.value);
             } else {
               //add it to games array
               //this should be loaded when you enter the room as well
+              setGames((prev) => [
+                ...prev,
+                {
+                  ...game,
+                  player_1_name:
+                    users.find((user) => user.id === game.player_1)?.username ??
+                    null,
+                  player_2_name:
+                    users.find((user) => user.id === game.player_2)?.username ??
+                    null,
+                } as TicTacToeGame,
+              ]);
             }
             break;
           }
@@ -98,7 +112,7 @@ export default function Main({ auth, setAuthUser }: any) {
         console.log(e);
       }
     },
-    [auth, handleMessage, setUsers]
+    [auth.id, handleMessage, setGames, setUsers, users]
   );
 
   const sendMessage = useWebsocket(onMessage);
@@ -172,9 +186,20 @@ export default function Main({ auth, setAuthUser }: any) {
             sendMessage(JSON.stringify(newGame));
           }}
         >
-          {" "}
-          Open game
+          Create new game
         </button>
+        <div>
+          <span>Current games</span>
+          <ul>
+            {games.map((game) => (
+              <li key={game.id}>
+                <button onClick={() => setGameId(game.id)}>
+                  Play against: {game.player_1_name}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
         <button
           onClick={signOut}
           className="text-xs w-full max-w-[295px] p-3 rounded-[10px] bg-violet-200 font-semibold text-violet-600 text-center absolute bottom-4"

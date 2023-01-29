@@ -17,8 +17,7 @@ export default function useWebsocket(onMessage: any) {
     ws.current.onmessage = (e: any) => {
       onMessage(e.data);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [onMessage]);
   const sendMessage = (msg: any) => {
     if (!ws.current) return;
     ws.current.send(msg);
