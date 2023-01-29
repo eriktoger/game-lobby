@@ -55,5 +55,6 @@ export interface DisplayGame extends TicTacToeGame {
 export type TicTacToeMove = {
   row_number: number;
   column_number: number;
-  player: string;
+  player_id: string;
+  game_id: string;
 };

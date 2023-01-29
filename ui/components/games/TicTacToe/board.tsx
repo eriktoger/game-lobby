@@ -59,7 +59,7 @@ export const Board = ({
     if (!move) {
       return "";
     }
-    return move.player === playerId ? "x" : "o";
+    return move.player_id === playerId ? "x" : "o";
   };
   console.log({ moves });
   return (
