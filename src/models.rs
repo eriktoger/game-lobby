@@ -82,9 +82,20 @@ pub struct TicTacToeGame {
     pub created_at: String,
 }
 
-// #[derive(Debug, Clone, Serialize, Deserialize)]
-// pub struct NewGame {
-//     pub username: String,
-//     pub user_id: String,
-//     pub game_name: String,
-// }
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NewTicTacToeMove {
+    pub player_id: String,
+    pub game_id: String,
+    pub row_number: i32,
+    pub column_number: i32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Insertable)]
+pub struct TicTacToeMove {
+    pub id: String,
+    pub player_id: String,
+    pub game_id: String,
+    pub row_number: i32,
+    pub column_number: i32,
+    pub created_at: String,
+}

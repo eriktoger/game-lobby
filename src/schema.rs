@@ -39,9 +39,10 @@ diesel::table! {
 diesel::table! {
     tic_tac_toe_moves (id) {
         id -> Text,
+        player_id -> Text,
         game_id -> Text,
-        row_number -> Text,
-        col_number -> Text,
+        row_number -> Integer,
+        column_number -> Integer,
         created_at -> Text,
     }
 }

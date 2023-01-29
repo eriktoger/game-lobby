@@ -1,6 +1,6 @@
-use crate::db;
 use crate::models::DisplayMessage;
 use crate::server;
+use crate::{db, models::NewTicTacToeMove};
 use actix::prelude::*;
 use actix_web::web;
 use actix_web_actors::ws;
@@ -33,6 +33,8 @@ pub enum ChatType {
     CONNECT,
     DISCONNECT,
     CREATEGAME,
+    MOVE,
+    JOINGAME,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -115,7 +117,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         self.addr.do_send(server::ClientMessage {
                             id: self.id,
                             msg,
-                            room: current_room.id,
+                            room: Some(current_room.id),
+                            game: None,
                         })
                     }
                     ChatType::JOIN => {
@@ -144,7 +147,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                                     self.addr.do_send(server::ClientMessage {
                                         id: self.id,
                                         msg,
-                                        room: r.id.clone(),
+                                        room: Some(r.id.clone()),
+                                        game: None,
                                     });
 
                                     let _ = db::leave_room(&mut conn, &r.id, &current_user.id);
@@ -172,7 +176,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         self.addr.do_send(server::ClientMessage {
                             id: self.id,
                             msg,
-                            room: input.value.clone(),
+                            room: Some(input.value.clone()),
+                            game: None,
                         })
                     }
                     ChatType::LEAVE => {
@@ -186,7 +191,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         let mut conn = self.db_pool.get().unwrap();
                         let new_game =
                             db::create_tic_tac_toe(&mut conn, self.id.to_string()).unwrap();
-
+                        println!("ws id: {}", self.id.to_string());
                         let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
                         let chat_msg = ChatMessage {
                             chat_type: ChatType::CREATEGAME,
@@ -200,7 +205,53 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         self.addr.do_send(server::ClientMessage {
                             id: 0, //sends it to yourself as well
                             msg,
-                            room: current_room.id,
+                            room: Some(current_room.id),
+                            game: None,
+                        })
+                    }
+                    ChatType::JOINGAME => {
+                        let mut conn = self.db_pool.get().unwrap();
+
+                        let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
+
+                        let _ = db::join_game(&mut conn, &input.value, &current_user.id);
+
+                        let chat_msg = ChatMessage {
+                            chat_type: ChatType::JOINGAME,
+                            value: input.value.clone(),
+                            user_id: current_user.id,
+                        };
+                        self.addr.do_send(server::ClientMessage {
+                            id: self.id,
+                            msg: serde_json::to_string(&chat_msg).unwrap(),
+                            room: None,
+                            game: Some(input.value.clone()),
+                        })
+                    }
+                    ChatType::MOVE => {
+                        println!("MOVE!");
+                        let input = data_json.as_ref().unwrap();
+
+                        let mut conn = self.db_pool.get().unwrap();
+                        let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
+                        let new_move =
+                            serde_json::from_str::<NewTicTacToeMove>(&input.value).unwrap();
+                        let m = db::insert_new_move(&mut conn, new_move).unwrap();
+
+                        //Im not sure how to send the message only to the game, since games are not rooms.
+                        //one is to look up the "room" in both room and games
+                        //or expand ClientMessage with type? ChatMessage/TicTacToe/what ever game we put in.
+                        // I think looking in games is the easiet for now
+                        let chat_msg = ChatMessage {
+                            chat_type: ChatType::MOVE,
+                            value: serde_json::to_string(&m).unwrap(),
+                            user_id: current_user.id,
+                        };
+                        self.addr.do_send(server::ClientMessage {
+                            id: self.id,
+                            msg: serde_json::to_string(&chat_msg).unwrap(),
+                            room: None,
+                            game: Some(m.game_id.clone()),
                         })
                     }
                     _ => {}

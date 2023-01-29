@@ -31,7 +31,10 @@ export type ChatMessage = {
     | "TEXT"
     | "LEAVE"
     | "DISCONNECT"
-    | "CREATEGAME";
+    | "CREATEGAME"
+    | "MOVE"
+    | "JOINGAME";
+
   value: string;
   user_id: string;
 };
@@ -50,7 +53,7 @@ export interface DisplayGame extends TicTacToeGame {
 }
 
 export type TicTacToeMove = {
-  row: number;
-  column: number;
+  row_number: number;
+  column_number: number;
   player: string;
 };

@@ -15,7 +15,6 @@ import { Board } from "./games/TicTacToe/board";
 
 export default function Main({ auth, setAuthUser }: any) {
   const [room, setSelectedRoom] = useState<Room | null>(null);
-  const [gameId, setGameId] = useState<null | string>(null);
   const {
     isLoading,
     users,
@@ -26,6 +25,11 @@ export default function Main({ auth, setAuthUser }: any) {
     games,
     setGames,
   } = useRooms();
+
+  //should load the game if we refresh the page?
+  //like a useEffect that looks of the user has an active game going
+  //
+  const [gameId, setGameId] = useState<null | string>(null);
   const [moves, setMoves] = useState<TicTacToeMove[]>([]);
 
   const handleMessage = useCallback(
@@ -88,7 +92,7 @@ export default function Main({ auth, setAuthUser }: any) {
           case "CREATEGAME": {
             const game = JSON.parse(messageData.value) as TicTacToeGame; // should be Display game from backend
             if (messageData.user_id == auth.id) {
-              setGameId(messageData.value);
+              setGameId(game.id);
             } else {
               //add it to games array
               //this should be loaded when you enter the room as well
@@ -105,6 +109,12 @@ export default function Main({ auth, setAuthUser }: any) {
                 } as TicTacToeGame,
               ]);
             }
+            break;
+          }
+          case "MOVE": {
+            const move = JSON.parse(messageData.value) as TicTacToeMove;
+            console.log("MOVE", move);
+            setMoves((prev) => [...prev, move]);
             break;
           }
         }
@@ -148,7 +158,6 @@ export default function Main({ auth, setAuthUser }: any) {
     setSelectedRoom(room);
 
     const joinRoom = {
-      //this should have a type
       chat_type: "JOIN",
       value: room.id,
       user_id: auth?.id,
@@ -161,10 +170,43 @@ export default function Main({ auth, setAuthUser }: any) {
     setAuthUser(false);
   };
 
+  const submitMove = (row: number, column: number) => {
+    if (gameId == null) {
+      return;
+    }
+
+    const move = {
+      game_id: gameId,
+      row_number: row,
+      column_number: column,
+      player_id: auth.id,
+    };
+    const data: ChatMessage = {
+      chat_type: "MOVE",
+      value: JSON.stringify(move),
+      user_id: auth.id,
+    };
+    sendMessage(JSON.stringify(data));
+  };
+
+  const joinGame = (gameId: string) => {
+    if (gameId == null) {
+      return;
+    }
+
+    const data: ChatMessage = {
+      chat_type: "JOINGAME",
+      value: gameId,
+      user_id: auth.id,
+    };
+    sendMessage(JSON.stringify(data));
+  };
+
   if (gameId) {
     return (
       <Board
         onClose={() => setGameId(null)}
+        submitMove={submitMove}
         gameId={gameId}
         moves={moves}
         playerId={auth.id}
@@ -193,7 +235,12 @@ export default function Main({ auth, setAuthUser }: any) {
           <ul>
             {games.map((game) => (
               <li key={game.id}>
-                <button onClick={() => setGameId(game.id)}>
+                <button
+                  onClick={() => {
+                    joinGame(game.id);
+                    setGameId(game.id);
+                  }}
+                >
                   Play against: {game.player_1_name}
                 </button>
               </li>

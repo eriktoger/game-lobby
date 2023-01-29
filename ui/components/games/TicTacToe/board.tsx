@@ -1,9 +1,16 @@
 import { useState } from "react";
 import { TicTacToeMove } from "../../types";
 
-const Square = ({ marker }: { marker: string }) => {
+const Square = ({
+  marker,
+  onClick,
+}: {
+  marker: string;
+  onClick: () => void;
+}) => {
   return (
     <div
+      onClick={onClick}
       style={{
         display: "flex",
         height: 50,
@@ -21,11 +28,13 @@ const Square = ({ marker }: { marker: string }) => {
 
 export const Board = ({
   onClose,
+  submitMove,
   gameId,
   moves,
   playerId,
 }: {
   onClose: () => void;
+  submitMove: (row: number, column: number) => void;
   gameId?: string;
   moves: TicTacToeMove[];
   playerId: string;
@@ -44,13 +53,15 @@ export const Board = ({
   };
 
   const getMarker = (row: number, col: number) => {
-    const move = moves.find((move) => move.row === row && move.column === col);
+    const move = moves.find(
+      (move) => move.row_number === row && move.column_number === col
+    );
     if (!move) {
       return "";
     }
     return move.player === playerId ? "x" : "o";
   };
-
+  console.log({ moves });
   return (
     <div style={{ backgroundColor: "white" }}>
       <button onClick={onClose} style={{ color: "black" }}>
@@ -67,15 +78,15 @@ export const Board = ({
             color: "red",
           }}
         >
-          <Square marker={getMarker(0, 0)} />
-          <Square marker={getMarker(0, 1)} />
-          <Square marker={getMarker(0, 2)} />
-          <Square marker={getMarker(1, 0)} />
-          <Square marker={getMarker(1, 1)} />
-          <Square marker={getMarker(1, 2)} />
-          <Square marker={getMarker(2, 0)} />
-          <Square marker={getMarker(2, 1)} />
-          <Square marker={getMarker(2, 2)} />
+          <Square marker={getMarker(0, 0)} onClick={() => submitMove(0, 0)} />
+          <Square marker={getMarker(0, 1)} onClick={() => submitMove(0, 1)} />
+          <Square marker={getMarker(0, 2)} onClick={() => submitMove(0, 2)} />
+          <Square marker={getMarker(1, 0)} onClick={() => submitMove(1, 0)} />
+          <Square marker={getMarker(1, 1)} onClick={() => submitMove(1, 1)} />
+          <Square marker={getMarker(1, 2)} onClick={() => submitMove(1, 2)} />
+          <Square marker={getMarker(2, 0)} onClick={() => submitMove(2, 0)} />
+          <Square marker={getMarker(2, 1)} onClick={() => submitMove(2, 1)} />
+          <Square marker={getMarker(2, 2)} onClick={() => submitMove(2, 2)} />
         </div>
       ) : (
         <button style={{ color: "black" }}>Create new game</button>

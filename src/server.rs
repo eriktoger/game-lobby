@@ -29,7 +29,8 @@ pub struct Disconnect {
 pub struct ClientMessage {
     pub id: usize, //Can this be string= and the user id?
     pub msg: String,
-    pub room: String,
+    pub room: Option<String>,
+    pub game: Option<String>,
 }
 pub struct ListRooms;
 impl actix::Message for ListRooms {
@@ -63,7 +64,7 @@ impl ChatServer {
         }
     }
     //we could pass in ChatMessage instead of message
-    fn send_message(&self, room: &str, message: &str, ws_id: usize) {
+    fn send_message_to_room(&self, room: &str, message: &str, ws_id: usize) {
         let mut conn = self.pool.get().unwrap();
 
         let receivers = db::get_users_in_room(&mut conn, room.to_string()).unwrap();
@@ -75,6 +76,17 @@ impl ChatServer {
                     addr.do_send(Message(message.to_owned()));
                 }
             }
+        }
+    }
+    fn send_message_to_game(&self, game: &str, message: &str, ws_id: usize) {
+        let mut conn = self.pool.get().unwrap();
+
+        let opponents_wsc =
+            db::get_oponent(&mut conn, game.to_string(), ws_id.to_string()).unwrap();
+        println!("opsc: {}", opponents_wsc);
+        if let Some(addr) = self.sessions.get(&opponents_wsc.parse::<usize>().unwrap()) {
+            println!("Sending!");
+            addr.do_send(Message(message.to_owned()));
         }
     }
     fn send_message_self(&self, room: &str, message: &str, self_id: usize) {
@@ -138,9 +150,10 @@ impl Handler<Disconnect> for ChatServer {
         //this should send a message that the user left the current chat channel.
         //and you should leave the room ()
 
+        //we also need to send it to the game if the user disconnects.
         let (current_room, current_user) = get_user_and_room(&mut self.pool, msg.id.to_string());
 
-        self.send_message(
+        self.send_message_to_room(
             &current_room.id,
             &json!({
                 "room": current_room.name,
@@ -152,11 +165,17 @@ impl Handler<Disconnect> for ChatServer {
         );
     }
 }
+//Can I have a handler each for games and chat?
 impl Handler<ClientMessage> for ChatServer {
     type Result = ();
 
     fn handle(&mut self, msg: ClientMessage, _: &mut Self::Context) -> Self::Result {
-        self.send_message(&msg.room, &msg.msg, msg.id);
+        if let Some(room) = msg.room {
+            self.send_message_to_room(&room, &msg.msg, msg.id);
+        }
+        if let Some(game) = msg.game {
+            self.send_message_to_game(&game, &msg.msg, msg.id);
+        }
     }
 }
 impl Handler<ListRooms> for ChatServer {
@@ -180,7 +199,7 @@ impl Handler<Join> for ChatServer {
             }
         }
         for room in rooms {
-            self.send_message(
+            self.send_message_to_room(
                 &room,
                 &json!({
                     "room": room,
