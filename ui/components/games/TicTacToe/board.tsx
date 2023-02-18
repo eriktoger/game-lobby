@@ -61,7 +61,7 @@ export const Board = ({
     }
     return move.player_id === playerId ? "x" : "o";
   };
-  console.log({ moves });
+
   return (
     <div style={{ backgroundColor: "white" }}>
       <button onClick={onClose} style={{ color: "black" }}>

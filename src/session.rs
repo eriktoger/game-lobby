@@ -1,4 +1,4 @@
-use crate::models::DisplayMessage;
+use crate::models::{DisplayMessage, TicTacToeInfo};
 use crate::server;
 use crate::{db, models::NewTicTacToeMove};
 use actix::prelude::*;
@@ -236,22 +236,54 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
                         let new_move =
                             serde_json::from_str::<NewTicTacToeMove>(&input.value).unwrap();
-                        let m = db::insert_new_move(&mut conn, new_move).unwrap();
+
+                        //verify that  is your turn
+                        let your_turn = db::your_turn(
+                            &mut conn,
+                            new_move.game_id.clone(),
+                            current_user.id.clone(),
+                        );
+                        println!("yt{}", your_turn);
+                        if !your_turn {
+                            return;
+                        }
+                        //verify that is a legal move, that is has not all ready beeing played
+                        let legal_move = db::legal_move(
+                            &mut conn,
+                            new_move.game_id.clone(),
+                            new_move.row_number.clone(),
+                            new_move.column_number.clone(),
+                        );
+                        if !legal_move {
+                            return;
+                        }
+
+                        let last_move = db::insert_new_move(&mut conn, new_move.clone()).unwrap();
+
+                        //check if the game is over
+
+                        let game_status = db::game_result(&mut conn, new_move);
 
                         //Im not sure how to send the message only to the game, since games are not rooms.
                         //one is to look up the "room" in both room and games
                         //or expand ClientMessage with type? ChatMessage/TicTacToe/what ever game we put in.
                         // I think looking in games is the easiet for now
+                        let game_id = last_move.game_id.clone();
+                        let info = TicTacToeInfo {
+                            last_move,
+                            game_status,
+                        };
+
                         let chat_msg = ChatMessage {
                             chat_type: ChatType::MOVE,
-                            value: serde_json::to_string(&m).unwrap(),
+                            value: serde_json::to_string(&info).unwrap(),
                             user_id: current_user.id,
                         };
                         self.addr.do_send(server::ClientMessage {
                             id: self.id,
                             msg: serde_json::to_string(&chat_msg).unwrap(),
                             room: None,
-                            game: Some(m.game_id.clone()),
+                            game: Some(game_id),
                         })
                     }
                     _ => {}

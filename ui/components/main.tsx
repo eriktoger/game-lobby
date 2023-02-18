@@ -8,6 +8,7 @@ import {
   DisplayMessage,
   Room,
   TicTacToeGame,
+  TicTacToeInfo,
   TicTacToeMove,
   User,
 } from "./types";
@@ -112,9 +113,9 @@ export default function Main({ auth, setAuthUser }: any) {
             break;
           }
           case "MOVE": {
-            const move = JSON.parse(messageData.value) as TicTacToeMove;
-            console.log("MOVE", move);
-            setMoves((prev) => [...prev, move]);
+            const info = JSON.parse(messageData.value) as TicTacToeInfo;
+            console.log("MOVE", info);
+            setMoves((prev) => [...prev, info.last_move]);
             break;
           }
         }

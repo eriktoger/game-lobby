@@ -31,6 +31,7 @@ diesel::table! {
         id -> Text,
         player_1 -> Text,
         player_2 -> Nullable<Text>,
+        turn -> Nullable<Text>,
         game_status -> Text,
         created_at -> Text,
     }

@@ -78,6 +78,7 @@ pub struct TicTacToeGame {
     pub id: String,
     pub player_1: String,
     pub player_2: Option<String>,
+    pub turn: Option<String>,
     pub game_status: String,
     pub created_at: String,
 }
@@ -98,4 +99,10 @@ pub struct TicTacToeMove {
     pub row_number: i32,
     pub column_number: i32,
     pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TicTacToeInfo {
+    pub game_status: String,
+    pub last_move: TicTacToeMove,
 }

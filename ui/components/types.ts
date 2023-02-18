@@ -58,3 +58,8 @@ export type TicTacToeMove = {
   player_id: string;
   game_id: string;
 };
+
+export type TicTacToeInfo = {
+  last_move: TicTacToeMove;
+  game_status: string;
+};
