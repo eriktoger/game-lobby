@@ -467,7 +467,19 @@ pub fn legal_move<'a>(
     }
 }
 
-pub fn game_result<'a>(conn: &'a mut SqliteConnection, new_move: NewTicTacToeMove) -> String {
+pub fn get_game_result<'a>(conn: &'a mut SqliteConnection, game_id: String) -> String {
+    use crate::schema::tic_tac_toe_games::dsl::{game_status, id, tic_tac_toe_games};
+    tic_tac_toe_games
+        .filter(id.eq(game_id.clone()))
+        .select(game_status)
+        .first(conn)
+        .unwrap()
+}
+
+pub fn update_game_result<'a>(
+    conn: &'a mut SqliteConnection,
+    new_move: NewTicTacToeMove,
+) -> String {
     use crate::schema::tic_tac_toe_games::dsl::{game_status, id, player_1, tic_tac_toe_games};
     use crate::schema::tic_tac_toe_moves::dsl::{
         column_number, game_id, row_number, tic_tac_toe_moves,

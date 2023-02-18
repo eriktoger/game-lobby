@@ -81,11 +81,16 @@ impl ChatServer {
     fn send_message_to_game(&self, game: &str, message: &str, ws_id: usize) {
         let mut conn = self.pool.get().unwrap();
 
+        //If I want to to send to both players I cant use ws_id
         let opponents_wsc =
             db::get_oponent(&mut conn, game.to_string(), ws_id.to_string()).unwrap();
         println!("opsc: {}", opponents_wsc);
         if let Some(addr) = self.sessions.get(&opponents_wsc.parse::<usize>().unwrap()) {
-            println!("Sending!");
+            println!("Sending to oppnent");
+            addr.do_send(Message(message.to_owned()));
+        }
+        if let Some(addr) = self.sessions.get(&ws_id) {
+            println!("Sending to self");
             addr.do_send(Message(message.to_owned()));
         }
     }

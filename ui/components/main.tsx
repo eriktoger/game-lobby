@@ -187,7 +187,7 @@ export default function Main({ auth, setAuthUser }: any) {
       value: JSON.stringify(move),
       user_id: auth.id,
     };
-    setMoves((prev) => [...prev, move]);
+    //setMoves((prev) => [...prev, move]);
     sendMessage(JSON.stringify(data));
   };
 

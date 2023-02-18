@@ -35,6 +35,7 @@ pub enum ChatType {
     CREATEGAME,
     MOVE,
     JOINGAME,
+    GAMEOVER,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -243,7 +244,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             new_move.game_id.clone(),
                             current_user.id.clone(),
                         );
-                        println!("yt{}", your_turn);
+
                         if !your_turn {
                             return;
                         }
@@ -257,12 +258,18 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         if !legal_move {
                             return;
                         }
+                        let old_game_status =
+                            db::get_game_result(&mut conn, new_move.game_id.clone());
+
+                        if old_game_status != "Active" {
+                            return;
+                        }
 
                         let last_move = db::insert_new_move(&mut conn, new_move.clone()).unwrap();
 
                         //check if the game is over
 
-                        let game_status = db::game_result(&mut conn, new_move);
+                        let game_status = db::update_game_result(&mut conn, new_move);
 
                         //Im not sure how to send the message only to the game, since games are not rooms.
                         //one is to look up the "room" in both room and games
@@ -271,20 +278,20 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         let game_id = last_move.game_id.clone();
                         let info = TicTacToeInfo {
                             last_move,
-                            game_status,
+                            game_status: game_status.clone(),
                         };
 
                         let chat_msg = ChatMessage {
                             chat_type: ChatType::MOVE,
                             value: serde_json::to_string(&info).unwrap(),
-                            user_id: current_user.id,
+                            user_id: current_user.id.clone(),
                         };
                         self.addr.do_send(server::ClientMessage {
                             id: self.id,
                             msg: serde_json::to_string(&chat_msg).unwrap(),
                             room: None,
-                            game: Some(game_id),
-                        })
+                            game: Some(game_id.clone()),
+                        });
                     }
                     _ => {}
                 }
