@@ -105,4 +105,5 @@ pub struct TicTacToeMove {
 pub struct TicTacToeInfo {
     pub game_status: String,
     pub last_move: TicTacToeMove,
+    pub turn: String,
 }

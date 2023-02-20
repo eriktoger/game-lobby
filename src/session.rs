@@ -265,7 +265,8 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             return;
                         }
 
-                        let last_move = db::insert_new_move(&mut conn, new_move.clone()).unwrap();
+                        let (last_move, whos_turn) =
+                            db::insert_new_move(&mut conn, new_move.clone()).unwrap();
 
                         //check if the game is over
 
@@ -279,6 +280,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         let info = TicTacToeInfo {
                             last_move,
                             game_status: game_status.clone(),
+                            turn: whos_turn,
                         };
 
                         let chat_msg = ChatMessage {

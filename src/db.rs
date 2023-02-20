@@ -141,7 +141,7 @@ pub fn insert_new_message(
 pub fn insert_new_move(
     conn: &mut SqliteConnection,
     new_move: NewTicTacToeMove,
-) -> Result<TicTacToeMove, DbError> {
+) -> Result<(TicTacToeMove, String), DbError> {
     use crate::schema::tic_tac_toe_moves::dsl::*;
 
     use crate::schema::tic_tac_toe_games::dsl::{
@@ -174,10 +174,10 @@ pub fn insert_new_move(
 
     diesel::update(tic_tac_toe_games)
         .filter(game_id.eq(new_move.game_id.to_string()))
-        .set(turn.eq(new_turn))
+        .set(turn.eq(new_turn.clone()))
         .execute(conn)?;
 
-    Ok(tic_tac_toe_move)
+    Ok((tic_tac_toe_move, new_turn))
 }
 
 pub fn get_rooms(conn: &mut SqliteConnection) -> Result<Vec<Room>, DbError> {

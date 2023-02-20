@@ -31,7 +31,9 @@ export default function Main({ auth, setAuthUser }: any) {
   //like a useEffect that looks of the user has an active game going
   //
   const [gameId, setGameId] = useState<null | string>(null);
+  const [gameStatus, setGameStatus] = useState<null | string>(null);
   const [moves, setMoves] = useState<TicTacToeMove[]>([]);
+  const [turn, setTurn] = useState<string | null>(null);
 
   const handleMessage = useCallback(
     (content: string, username: string) => {
@@ -112,9 +114,16 @@ export default function Main({ auth, setAuthUser }: any) {
             }
             break;
           }
+          case "JOINGAME": {
+            // Player 2 starts
+            setTurn(messageData.user_id);
+            break;
+          }
           case "MOVE": {
             const info = JSON.parse(messageData.value) as TicTacToeInfo;
             console.log("MOVE", info);
+            setTurn(info.turn);
+            setGameStatus(info.game_status);
             setMoves((prev) => [...prev, info.last_move]);
             break;
           }
@@ -212,6 +221,8 @@ export default function Main({ auth, setAuthUser }: any) {
         gameId={gameId}
         moves={moves}
         playerId={auth.id}
+        gameStatus={gameStatus}
+        turn={turn}
       />
     );
   }

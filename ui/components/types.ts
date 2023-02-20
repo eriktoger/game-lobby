@@ -62,4 +62,5 @@ export type TicTacToeMove = {
 export type TicTacToeInfo = {
   last_move: TicTacToeMove;
   game_status: string;
+  turn: string;
 };

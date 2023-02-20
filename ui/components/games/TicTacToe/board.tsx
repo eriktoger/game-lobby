@@ -1,28 +1,47 @@
 import { useState } from "react";
 import { TicTacToeMove } from "../../types";
+import styled from "styled-components";
+
+const StyledSquare = styled.div<{ color: string }>`
+  display: flex;
+  height: 50px;
+  width: 50px;
+  text-align: center;
+  border: 1px solid black;
+  color: black;
+  cursor: pointer;
+  span {
+    display: flex;
+    height: 100%;
+    width: 100%;
+    justify-content: center;
+    flex-direction: column;
+    color: ${(p) => p.color};
+
+    &.free {
+      opacity: 0;
+      :hover {
+        opacity: 1;
+        visibility: visible;
+      }
+    }
+  }
+`;
 
 const Square = ({
   marker,
   onClick,
 }: {
-  marker: string;
+  marker: string | null;
   onClick: () => void;
 }) => {
   return (
-    <div
+    <StyledSquare
       onClick={onClick}
-      style={{
-        display: "flex",
-        height: 50,
-        width: 50,
-        textAlign: "center",
-        justifyContent: "center",
-        flexDirection: "column",
-        border: "1px solid black",
-      }}
+      color={marker === "x" || !marker ? "red" : "blue"}
     >
-      {marker}
-    </div>
+      <span className={marker ? "" : "free"}>{marker ?? "x"} </span>
+    </StyledSquare>
   );
 };
 
@@ -32,12 +51,16 @@ export const Board = ({
   gameId,
   moves,
   playerId,
+  gameStatus,
+  turn,
 }: {
   onClose: () => void;
   submitMove: (row: number, column: number) => void;
   gameId?: string;
   moves: TicTacToeMove[];
   playerId: string;
+  gameStatus: string | null;
+  turn: string | null;
 }) => {
   const [currentGame, setCurrentGame] = useState(gameId);
 
@@ -57,11 +80,20 @@ export const Board = ({
       (move) => move.row_number === row && move.column_number === col
     );
     if (!move) {
-      return "";
+      return null;
     }
     return move.player_id === playerId ? "x" : "o";
   };
 
+  if (turn == null) {
+    //here could also be a possiblity to invite players?
+    return (
+      <div>
+        <span>Waiting for player...</span>
+      </div>
+    );
+  }
+  const yourTurn = turn === playerId;
   return (
     <div style={{ backgroundColor: "white" }}>
       <button onClick={onClose} style={{ color: "black" }}>
@@ -91,6 +123,7 @@ export const Board = ({
       ) : (
         <button style={{ color: "black" }}>Create new game</button>
       )}
+      <span>Game status: {gameStatus}</span>
     </div>
   );
 };
