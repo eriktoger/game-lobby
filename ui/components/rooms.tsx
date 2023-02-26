@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
-import Avatar from "./avatar";
-import { Room, User } from "./types";
+import React, { useState, useEffect, SetStateAction, Dispatch } from "react";
+import styled from "styled-components";
+import { ChatMessage, DisplayGame, Room, User } from "./types";
+
 async function getRooms() {
   try {
     const url = "http://localhost:8080/rooms";
@@ -11,45 +12,35 @@ async function getRooms() {
     return Promise.resolve(null);
   }
 }
-// onChangeRoom={onChangeRoom}
-//             room={room}
-//             key={room.id}
-//             userId={userId}
+
+const StyledItem = styled.h3<{ selected: boolean }>`
+  padding: 0.2rem 0;
+  text-decoration: ${(props) => (props.selected ? "underline" : "none")};
+`;
+
+const UserContainer = styled.div`
+  border-top: 1px solid #4c4c4c;
+  margin-top: 0.5rem;
+`;
 
 function ChatListItem({
   onChangeRoom,
   room,
-  userId,
+  currentRoom,
 }: {
   onChangeRoom: any;
   room: Room;
-  userId: string;
+  currentRoom: Room;
 }) {
-  const { name, created_at } = room;
-
-  const date = new Date(created_at);
-  const ampm = date.getHours() >= 12 ? "PM" : "AM";
-  const time = `${date.getHours()}:${date.getMinutes()} ${ampm}`;
+  const { name } = room;
 
   return (
-    <div
+    <StyledItem
+      selected={room?.id === currentRoom?.id}
       onClick={() => onChangeRoom(room)}
-      className={`p-2 rounded-[10px] shadow-sm cursor-pointer`}
     >
-      <div className="flex justify-between items-center gap-3">
-        <div className="flex gap-3 items-center w-full">
-          <div className="w-full max-w-[150px]">
-            <h3 className="font-semibold text-sm text-gray-700">{name}</h3>
-            {/* <p className="font-light text-xs text-gray-600 truncate">
-              {last_message}
-            </p> */}
-          </div>
-        </div>
-        <div className="text-gray-400 min-w-[55px]">
-          <span className="text-xs">{time}</span>
-        </div>
-      </div>
-    </div>
+      {name}
+    </StyledItem>
   );
 }
 
@@ -57,10 +48,12 @@ export default function ChatList({
   onChangeRoom,
   userId,
   users,
+  currentRoom,
 }: {
   onChangeRoom: any;
   userId: string;
   users: User[];
+  currentRoom: Room;
 }) {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [isLoading, setLoading] = useState(false);
@@ -74,25 +67,98 @@ export default function ChatList({
   }, []);
 
   return (
-    <div className="overflow-hidden space-y-3">
+    <aside>
       {isLoading && <p>Loading chat lists.</p>}
-      {rooms?.map((room: Room, index: number) => {
+      {rooms?.map((room) => {
         return (
           <ChatListItem
             onChangeRoom={onChangeRoom}
             room={room}
             key={room.id}
-            userId={userId}
+            currentRoom={currentRoom}
           />
         );
       })}
 
-      <div>
-        <p>Users</p>
+      <UserContainer>
+        <h4>Users</h4>
         {users.map((user: any) => (
           <p key={user.username}>{user.username}</p>
         ))}
-      </div>
-    </div>
+      </UserContainer>
+    </aside>
   );
 }
+
+export const Games = ({
+  games,
+  auth,
+  sendMessage,
+  setGameId,
+  setAuthUser,
+}: {
+  games: DisplayGame[];
+  auth: any;
+  sendMessage: (msg: any) => void;
+  setGameId: Dispatch<SetStateAction<string>>;
+  setAuthUser: any;
+}) => {
+  const joinGame = (gameId: string) => {
+    if (gameId == null) {
+      return;
+    }
+
+    const data: ChatMessage = {
+      chat_type: "JOINGAME",
+      value: gameId,
+      user_id: auth.id,
+    };
+    sendMessage(JSON.stringify(data));
+  };
+
+  const signOut = () => {
+    window.localStorage.removeItem("user");
+    setAuthUser(false);
+  };
+
+  return (
+    <aside>
+      <button
+        onClick={() => {
+          const newGame: ChatMessage = {
+            chat_type: "CREATEGAME",
+            value: "Tic_Tac_Toe",
+            user_id: auth.id,
+          };
+          sendMessage(JSON.stringify(newGame));
+        }}
+      >
+        Create new game
+      </button>
+      <div>
+        <span>Current games</span>
+        <ul>
+          {games.map((game) => {
+            //Games needs to be updatd when someone joins or leave
+            if (!game.player_1_name) {
+              return null;
+            }
+            return (
+              <li key={game.id}>
+                <button
+                  onClick={() => {
+                    joinGame(game.id);
+                    setGameId(game.id);
+                  }}
+                >
+                  Play against: {game.player_1_name}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+      <button onClick={signOut}>LOG OUT</button>
+    </aside>
+  );
+};
