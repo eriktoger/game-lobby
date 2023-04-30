@@ -51,9 +51,13 @@ export default function useRooms() {
     setGames(games);
   };
 
+  const uniqueUsers = users.filter(
+    (user, index) =>
+      index === users.findIndex((user2) => user.username === user2.username)
+  );
   return {
     isLoading,
-    users,
+    users: uniqueUsers,
     setUsers,
     messages,
     setMessages,
