@@ -2,14 +2,14 @@ import { useState } from "react";
 import { TicTacToeMove } from "../../types";
 import styled from "styled-components";
 
-const StyledSquare = styled.div<{ color: string }>`
+const StyledSquare = styled.div<{ color: string; yourTurn: boolean }>`
   display: flex;
   height: 50px;
   width: 50px;
   text-align: center;
   border: 1px solid black;
   color: black;
-  cursor: pointer;
+  cursor: ${(p) => (p.yourTurn ? "pointer" : "not-allowed")};
   span {
     display: flex;
     height: 100%;
@@ -21,7 +21,7 @@ const StyledSquare = styled.div<{ color: string }>`
     &.free {
       opacity: 0;
       :hover {
-        opacity: 1;
+        opacity: ${(p) => (p.yourTurn ? 1 : 0)};
         visibility: visible;
       }
     }
@@ -31,20 +31,24 @@ const StyledSquare = styled.div<{ color: string }>`
 const Square = ({
   marker,
   onClick,
+  yourTurn,
 }: {
   marker: string | null;
   onClick: () => void;
+  yourTurn: boolean;
 }) => {
   return (
     <StyledSquare
       onClick={onClick}
       color={marker === "x" || !marker ? "red" : "blue"}
+      yourTurn={yourTurn}
     >
       <span className={marker ? "" : "free"}>{marker ?? "x"} </span>
     </StyledSquare>
   );
 };
 
+const StyledBoard = styled.div``;
 export const Board = ({
   onClose,
   submitMove,
@@ -89,14 +93,18 @@ export const Board = ({
     //here could also be a possiblity to invite players?
     return (
       <div>
-        <span>Waiting for player...</span>
+        <span style={{ color: "white" }}>Waiting for player...</span>
       </div>
     );
   }
   const yourTurn = turn === playerId;
+
   return (
     <div style={{ backgroundColor: "white" }}>
-      <button onClick={onClose} style={{ color: "black" }}>
+      <button
+        onClick={onClose}
+        style={{ backgroundColor: "white", color: "black" }}
+      >
         Close
       </button>
       {currentGame ? (
@@ -110,20 +118,59 @@ export const Board = ({
             color: "red",
           }}
         >
-          <Square marker={getMarker(0, 0)} onClick={() => submitMove(0, 0)} />
-          <Square marker={getMarker(0, 1)} onClick={() => submitMove(0, 1)} />
-          <Square marker={getMarker(0, 2)} onClick={() => submitMove(0, 2)} />
-          <Square marker={getMarker(1, 0)} onClick={() => submitMove(1, 0)} />
-          <Square marker={getMarker(1, 1)} onClick={() => submitMove(1, 1)} />
-          <Square marker={getMarker(1, 2)} onClick={() => submitMove(1, 2)} />
-          <Square marker={getMarker(2, 0)} onClick={() => submitMove(2, 0)} />
-          <Square marker={getMarker(2, 1)} onClick={() => submitMove(2, 1)} />
-          <Square marker={getMarker(2, 2)} onClick={() => submitMove(2, 2)} />
+          <Square
+            yourTurn={yourTurn}
+            marker={getMarker(0, 0)}
+            onClick={() => submitMove(0, 0)}
+          />
+          <Square
+            yourTurn={yourTurn}
+            marker={getMarker(0, 1)}
+            onClick={() => submitMove(0, 1)}
+          />
+          <Square
+            yourTurn={yourTurn}
+            marker={getMarker(0, 2)}
+            onClick={() => submitMove(0, 2)}
+          />
+          <Square
+            yourTurn={yourTurn}
+            marker={getMarker(1, 0)}
+            onClick={() => submitMove(1, 0)}
+          />
+          <Square
+            yourTurn={yourTurn}
+            marker={getMarker(1, 1)}
+            onClick={() => submitMove(1, 1)}
+          />
+          <Square
+            yourTurn={yourTurn}
+            marker={getMarker(1, 2)}
+            onClick={() => submitMove(1, 2)}
+          />
+          <Square
+            yourTurn={yourTurn}
+            marker={getMarker(2, 0)}
+            onClick={() => submitMove(2, 0)}
+          />
+          <Square
+            yourTurn={yourTurn}
+            marker={getMarker(2, 1)}
+            onClick={() => submitMove(2, 1)}
+          />
+          <Square
+            yourTurn={yourTurn}
+            marker={getMarker(2, 2)}
+            onClick={() => submitMove(2, 2)}
+          />
         </div>
       ) : (
         <button style={{ color: "black" }}>Create new game</button>
       )}
-      <span>Game status: {gameStatus}</span>
+      <div>
+        <span>{yourTurn ? "Your turn" : "Opponents turn"}</span>
+        <span>Game status: {gameStatus}</span>
+      </div>
     </div>
   );
 };

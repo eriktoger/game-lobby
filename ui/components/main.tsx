@@ -15,19 +15,48 @@ import {
 import { Board } from "./games/TicTacToe/board";
 import styled from "styled-components";
 
-const Container = styled.main`
+const StyledMain = styled.main`
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
   padding: 0.5rem;
-  background-color: #bdbdbd;
+  background-color: #1d0624;
   width: 100vw;
   height: 100vh;
+  .logged-in {
+    color: white;
+  }
+  .user-container {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+    align-items: center;
+    button {
+      color: white;
+      background-color: black;
+      padding: 5px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  }
 `;
 
 const StyledInfo = styled.section`
   display: flex;
-  justify-content: space-around;
+  justify-content: space-evenly;
   height: 50%;
-  aside {
-    width: 40vw;
+  width: 100%;
+`;
+
+const StyledMessageContainer = styled.section`
+  height: 50%;
+  overflow: auto;
+  input,
+  button {
+    background-color: black;
+    color: white;
+    height: 30px;
   }
 `;
 
@@ -226,8 +255,17 @@ export default function Main({ auth, setAuthUser }: any) {
     );
   }
 
+  const signOut = () => {
+    window.localStorage.removeItem("user");
+    setAuthUser(false);
+  };
+
   return (
-    <Container>
+    <StyledMain>
+      <div className="user-container">
+        <p className="logged-in"> Logged in as: {auth?.username} </p>
+        <button onClick={signOut}>LOG OUT</button>
+      </div>
       <StyledInfo>
         <ChatList
           onChangeRoom={onChangeRoom}
@@ -243,27 +281,22 @@ export default function Main({ auth, setAuthUser }: any) {
           setAuthUser={setAuthUser}
         />
       </StyledInfo>
-      <section>
+      <StyledMessageContainer>
         {room?.id && (
           <>
-            <div>{auth?.username}</div>
-            <div>
-              <div>
-                <p>{room.name}</p>
-              </div>
-              <hr />
-            </div>
             {isLoading && room.id && <p>Loading conversation...</p>}
             <Conversation data={messages} auth={auth} />
-            <div className="w-full">
-              <form onSubmit={submitMessage}>
-                <input name="message" placeholder="Type your message here..." />
-                <button type="submit">Sent</button>
-              </form>
-            </div>
           </>
         )}
-      </section>
-    </Container>
+      </StyledMessageContainer>
+      <div>
+        <form onSubmit={submitMessage}>
+          <input name="message" placeholder="Type your message here..." />
+          <button type="submit" disabled={isLoading}>
+            Send
+          </button>
+        </form>
+      </div>
+    </StyledMain>
   );
 }

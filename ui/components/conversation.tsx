@@ -1,6 +1,27 @@
 import React, { useEffect, useRef } from "react";
 import Avatar from "./avatar";
 import { DisplayMessage, User } from "./types";
+import styled from "styled-components";
+
+const StyledConversationItem = styled.div<{ right: boolean }>`
+  display: flex;
+  flex-direction: ${(p) => (p.right ? "row-reverse" : "row")};
+  gap: 10px;
+  margin-bottom: 10px;
+
+  p {
+    color: white;
+    line-height: 30px;
+    text-align: ${(p) => (p.right ? "end" : "start")};
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    hyphens: auto;
+    max-width: 80vw;
+    background-color: ${(p) => (p.right ? "#680000" : "#010155")};
+    padding: 5px;
+    border-radius: 10px;
+  }
+`;
 
 function ConversationItem({
   right,
@@ -11,31 +32,14 @@ function ConversationItem({
   content: string;
   username: string;
 }) {
-  if (right) {
-    return (
-      <div className="w-full flex justify-end">
-        <div className="flex gap-3 justify-end">
-          <div className="max-w-[65%] bg-violet-500 p-3 text-sm rounded-xl rounded-br-none">
-            <p className="text-white">{content}</p>
-          </div>
-          <div className="mt-auto">
-            <Avatar>{username}</Avatar>
-          </div>
-        </div>
-      </div>
-    );
-  }
   return (
-    <div className="flex gap-3 w-full">
-      <div className="mt-auto">
-        <Avatar color="rgb(245 158 11)">{username}</Avatar>
-      </div>
-      <div className="max-w-[65%] bg-gray-200 p-3 text-sm rounded-xl rounded-bl-none">
-        <p>{content}</p>
-      </div>
-    </div>
+    <StyledConversationItem right={right}>
+      <Avatar color={right ? "#a00" : "#0101ae"}>{username}</Avatar>
+      <p>{content}</p>
+    </StyledConversationItem>
   );
 }
+
 export default function Conversation({
   data,
   auth,
@@ -48,7 +52,7 @@ export default function Conversation({
     ref.current?.scrollTo(0, ref.current.scrollHeight);
   }, [data]);
   return (
-    <div className="p-4 space-y-4 overflow-auto h-full" ref={ref}>
+    <div ref={ref}>
       {data.map((item, i) => {
         return (
           <ConversationItem

@@ -16,11 +16,17 @@ async function getRooms() {
 const StyledItem = styled.h3<{ selected: boolean }>`
   padding: 0.2rem 0;
   text-decoration: ${(props) => (props.selected ? "underline" : "none")};
+  color: white;
+  cursor: pointer;
 `;
 
 const UserContainer = styled.div`
   border-top: 1px solid #4c4c4c;
   margin-top: 0.5rem;
+  color: white;
+  li {
+    margin: 5px 0;
+  }
 `;
 
 function ChatListItem({
@@ -82,13 +88,35 @@ export default function ChatList({
 
       <UserContainer>
         <h4>Users</h4>
-        {users.map((user: any) => (
-          <p key={user.username}>{user.username}</p>
-        ))}
+        <ul>
+          {users.map((user: any) => (
+            <li key={user.username}>{user.username}</li>
+          ))}
+        </ul>
       </UserContainer>
     </aside>
   );
 }
+
+const StyledAside = styled.aside`
+  button {
+    color: white;
+    background-color: black;
+    padding: 5px;
+    margin: 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    width: 70%;
+    div {
+      display: flex;
+      flex-direction: column;
+    }
+  }
+
+  ul {
+    list-style-type: none;
+  }
+`;
 
 export const Games = ({
   games,
@@ -116,13 +144,8 @@ export const Games = ({
     sendMessage(JSON.stringify(data));
   };
 
-  const signOut = () => {
-    window.localStorage.removeItem("user");
-    setAuthUser(false);
-  };
-
   return (
-    <aside>
+    <StyledAside>
       <button
         onClick={() => {
           const newGame: ChatMessage = {
@@ -136,7 +159,7 @@ export const Games = ({
         Create new game
       </button>
       <div>
-        <span>Current games</span>
+        <h3>Current games</h3>
         <ul>
           {games.map((game) => {
             //Games needs to be updatd when someone joins or leave
@@ -151,14 +174,16 @@ export const Games = ({
                     setGameId(game.id);
                   }}
                 >
-                  Play against: {game.player_1_name}
+                  <div>
+                    <span>Play against:</span>
+                    <span>{game.player_1_name}</span>
+                  </div>
                 </button>
               </li>
             );
           })}
         </ul>
       </div>
-      <button onClick={signOut}>LOG OUT</button>
-    </aside>
+    </StyledAside>
   );
 };
