@@ -1,13 +1,13 @@
 use crate::{
     models::{
-        DisplayMessage, Message, NewTicTacToeMove, Room, RoomResponse, RoomToUser, TicTacToeGame,
-        TicTacToeMove, User,
+        DisplayMessage, Message, NewTicTacToeMove, Room, RoomToUser, TicTacToeGame, TicTacToeMove,
+        User,
     },
     schema::tic_tac_toe_moves::player_id,
 };
 use chrono::{DateTime, Utc};
-use diesel::{prelude::*, row};
-use std::{collections::HashMap, time::SystemTime};
+use diesel::prelude::*;
+use std::time::SystemTime;
 use uuid::Uuid;
 pub type DbError = Box<dyn std::error::Error + Send + Sync>;
 
@@ -189,82 +189,6 @@ pub fn get_rooms(conn: &mut SqliteConnection) -> Result<Vec<Room>, DbError> {
 
     let rooms_data = rooms::table.get_results(conn)?;
     Ok(rooms_data)
-}
-
-pub fn get_rooms_with_users(conn: &mut SqliteConnection) -> Result<Vec<RoomResponse>, DbError> {
-    use crate::schema::room_to_users;
-    use crate::schema::rooms;
-    use crate::schema::users;
-
-    let users_data: Vec<User> = users::table.get_results(conn)?;
-    let rooms_data: Vec<Room> = rooms::table.get_results(conn)?;
-
-    let rooms_to_user_data: Vec<RoomToUser> = room_to_users::table.get_results(conn)?;
-    let mut response_rooms_map: HashMap<Room, Vec<User>> = HashMap::new();
-
-    for room in &rooms_data {
-        response_rooms_map.insert((*room).clone(), vec![]);
-    }
-
-    for data in rooms_to_user_data {
-        let user = users_data.iter().find(|u| u.id == data.user);
-        let room = rooms_data.iter().find(|r| r.id == data.room);
-        if user.is_none() || room.is_none() {
-            continue;
-        }
-        let real_user = user.unwrap().clone();
-        let real_room = room.unwrap().clone();
-        if response_rooms_map.contains_key(&real_room) {
-            response_rooms_map
-                .get_mut(&real_room)
-                .unwrap()
-                .push(real_user);
-        } else {
-            response_rooms_map.insert(real_room, vec![real_user]);
-        }
-    }
-    let response_rooms2: Vec<(Room, Vec<User>)> = response_rooms_map.into_iter().collect();
-    let response_room = response_rooms2
-        .iter()
-        .map(|(room, users)| RoomResponse {
-            room: (*room).clone(),
-            users: (*users).clone(),
-        })
-        .collect();
-    Ok(response_room)
-}
-
-pub fn get_current_room_with_users(
-    conn: &mut SqliteConnection,
-    ws_id: String,
-) -> Result<Option<RoomResponse>, DbError> {
-    use crate::schema::room_to_users::dsl::*;
-    use crate::schema::users;
-
-    let users_data: Vec<User> = users::table.get_results(conn)?;
-    let room_option = get_current_room(conn, ws_id)?;
-
-    if room_option.is_none() {
-        return Ok(None);
-    }
-    let current_room = room_option.unwrap();
-
-    let rooms_to_user_data: Vec<RoomToUser> = room_to_users
-        .filter(room.eq(current_room.id.clone()))
-        .get_results(conn)?;
-
-    let mut room_response = RoomResponse {
-        room: current_room,
-        users: vec![],
-    };
-
-    for r in &rooms_to_user_data {
-        match users_data.iter().find(|u| u.id == r.user) {
-            Some(current_user) => room_response.users.push((*current_user).clone()),
-            None => {}
-        };
-    }
-    Ok(Some(room_response))
 }
 
 pub fn get_oponent(
