@@ -1,0 +1,6 @@
+ui
+.env
+node_modules
+src/target
+target
+.git
