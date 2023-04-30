@@ -14,6 +14,7 @@ const StyledAvatar = styled.div`
   width: 30px;
   text-align: center;
   line-height: 30px;
+  color: white;
 `;
 export default function Avatar({
   children,

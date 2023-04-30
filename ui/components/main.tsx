@@ -51,6 +51,7 @@ const StyledInfo = styled.section`
 
 const StyledMessageContainer = styled.section`
   height: 50%;
+  min-width: 300px;
   overflow: auto;
   input,
   button {
