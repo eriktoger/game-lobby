@@ -244,7 +244,10 @@ export default function Main({ auth, setAuthUser }: any) {
   if (gameId) {
     return (
       <Board
-        onClose={() => setGameId(null)}
+        onClose={() => {
+          setGameId(null);
+          fetchRoomData(room.id, auth);
+        }}
         submitMove={submitMove}
         gameId={gameId}
         moves={moves}
