@@ -48,7 +48,21 @@ const Square = ({
   );
 };
 
-const StyledBoard = styled.div``;
+const StyledBoard = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  padding: 5px;
+  width: 250px;
+  .status {
+    display: flex;
+    flex-direction: column;
+    color: black;
+    font-size: 1rem;
+  }
+`;
+
 export const Board = ({
   onClose,
   submitMove,
@@ -100,7 +114,7 @@ export const Board = ({
   const yourTurn = turn === playerId;
 
   return (
-    <div style={{ backgroundColor: "white" }}>
+    <StyledBoard style={{ backgroundColor: "white" }}>
       <button
         onClick={onClose}
         style={{ backgroundColor: "white", color: "black" }}
@@ -118,59 +132,24 @@ export const Board = ({
             color: "red",
           }}
         >
-          <Square
-            yourTurn={yourTurn}
-            marker={getMarker(0, 0)}
-            onClick={() => submitMove(0, 0)}
-          />
-          <Square
-            yourTurn={yourTurn}
-            marker={getMarker(0, 1)}
-            onClick={() => submitMove(0, 1)}
-          />
-          <Square
-            yourTurn={yourTurn}
-            marker={getMarker(0, 2)}
-            onClick={() => submitMove(0, 2)}
-          />
-          <Square
-            yourTurn={yourTurn}
-            marker={getMarker(1, 0)}
-            onClick={() => submitMove(1, 0)}
-          />
-          <Square
-            yourTurn={yourTurn}
-            marker={getMarker(1, 1)}
-            onClick={() => submitMove(1, 1)}
-          />
-          <Square
-            yourTurn={yourTurn}
-            marker={getMarker(1, 2)}
-            onClick={() => submitMove(1, 2)}
-          />
-          <Square
-            yourTurn={yourTurn}
-            marker={getMarker(2, 0)}
-            onClick={() => submitMove(2, 0)}
-          />
-          <Square
-            yourTurn={yourTurn}
-            marker={getMarker(2, 1)}
-            onClick={() => submitMove(2, 1)}
-          />
-          <Square
-            yourTurn={yourTurn}
-            marker={getMarker(2, 2)}
-            onClick={() => submitMove(2, 2)}
-          />
+          {[0, 1, 2].map((x) =>
+            [0, 1, 2].map((y) => (
+              <Square
+                key={x.toString() + y.toString()}
+                yourTurn={yourTurn}
+                marker={getMarker(x, y)}
+                onClick={() => submitMove(x, y)}
+              />
+            ))
+          )}
         </div>
       ) : (
         <button style={{ color: "black" }}>Create new game</button>
       )}
-      <div>
+      <div className="status">
         <span>{yourTurn ? "Your turn" : "Opponents turn"}</span>
         <span>Game status: {gameStatus}</span>
       </div>
-    </div>
+    </StyledBoard>
   );
 };
