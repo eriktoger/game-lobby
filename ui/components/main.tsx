@@ -14,6 +14,7 @@ import {
 } from "./types";
 import { Board } from "./games/TicTacToe/board";
 import styled from "styled-components";
+import { baseUrl } from "./login";
 
 const StyledMain = styled.main`
   display: flex;
@@ -109,7 +110,7 @@ export default function Main({ auth, setAuthUser }: any) {
           case "CONNECT": {
             auth?.id &&
               fetch(
-                `http://localhost:8080/users/${auth.id}/session/${messageData.value}`,
+                `${baseUrl}/users/${auth.id}/session/${messageData.value}`,
                 {
                   method: "POST",
                   headers: {

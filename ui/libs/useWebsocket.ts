@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
+import { wsUri } from "../components/login";
 export default function useWebsocket(onMessage: any) {
   const ws = useRef<any>(null);
   useEffect(() => {
     if (ws.current !== null) return;
-    const wsUri = "ws://localhost:8080/ws";
+
     ws.current = new WebSocket(wsUri);
     ws.current.onopen = () => console.log("ws opened");
     ws.current.onclose = () => console.log("ws closed");

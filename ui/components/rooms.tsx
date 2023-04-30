@@ -1,10 +1,11 @@
 import React, { useState, useEffect, SetStateAction, Dispatch } from "react";
 import styled from "styled-components";
 import { ChatMessage, DisplayGame, Room, User } from "./types";
+import { baseUrl } from "./login";
 
 async function getRooms() {
   try {
-    const url = "http://localhost:8080/rooms";
+    const url = `${baseUrl}/rooms`;
     let result = await fetch(url);
     return result.json();
   } catch (e) {

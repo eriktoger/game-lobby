@@ -1,6 +1,10 @@
 import { useState } from "react";
 import styled from "styled-components";
 
+const base = "game-lobby-plzu.onrender.com"; //localhost:8000
+export const wsUri = `ws:${base}/ws`;
+export const baseUrl = `https://${base}`; // no s in localhost
+
 async function createAccount({
   username,
   phone,
@@ -9,7 +13,7 @@ async function createAccount({
   phone: string;
 }) {
   try {
-    const url = "http://localhost:8080/users/create";
+    const url = `${baseUrl}/users/create`;
     let result = await fetch(url, {
       method: "POST",
       headers: {
@@ -25,7 +29,7 @@ async function createAccount({
 
 async function signIn({ phone }: { phone: string }) {
   try {
-    const url = "http://localhost:8080/users/phone/" + phone;
+    const url = `${baseUrl}/users/phone/${phone}`;
     let result = await fetch(url);
     return result.json();
   } catch (e) {

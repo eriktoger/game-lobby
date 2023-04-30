@@ -6,9 +6,10 @@ import {
   TicTacToeGame,
   User,
 } from "../components/types";
+import { baseUrl } from "../components/login";
 
 const fetchRoom = async (room_id: string) => {
-  const url = `http://localhost:8080/rooms/${room_id}/data`;
+  const url = `${baseUrl}/rooms/${room_id}/data`;
   try {
     const resp = fetch(url).then((res) => res.json());
 
