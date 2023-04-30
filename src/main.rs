@@ -22,7 +22,7 @@ async fn main() -> std::io::Result<()> {
         .max_size(1) // https://stackoverflow.com/questions/57123453/how-to-use-diesel-with-sqlite-connections-and-avoid-database-is-locked-type-of
         .build(manager)
         .expect("Failed to create pool.");
-    let server_addr = "127.0.0.1";
+    let server_addr = "0.0.0.0";
     let server_port = 8000;
     let server = server::ChatServer::new(pool.clone()).start();
     let app = HttpServer::new(move || {
