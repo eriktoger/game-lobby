@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 use diesel::{prelude::*, row};
 use std::{collections::HashMap, time::SystemTime};
 use uuid::Uuid;
-type DbError = Box<dyn std::error::Error + Send + Sync>;
+pub type DbError = Box<dyn std::error::Error + Send + Sync>;
 
 fn iso_date() -> String {
     let now = SystemTime::now();
@@ -17,15 +17,12 @@ fn iso_date() -> String {
     return now.to_rfc3339();
 }
 
-pub fn find_user_by_ws(conn: &mut SqliteConnection, ws_id: String) -> User {
+pub fn find_user_by_ws(conn: &mut SqliteConnection, ws_id: String) -> Result<User, DbError> {
     use crate::schema::users::dsl::*;
-    print!("inside: {}", ws_id);
-    let res = users
+
+    Ok(users
         .filter(web_socket_session.eq(ws_id.to_string()))
-        .first::<User>(conn)
-        .unwrap();
-    print!("inside after: {}", ws_id);
-    return res;
+        .first::<User>(conn)?)
 }
 
 pub fn find_user_by_uid(conn: &mut SqliteConnection, uid: Uuid) -> Result<Option<User>, DbError> {
@@ -113,35 +110,38 @@ pub fn insert_new_message(
     conn: &mut SqliteConnection,
     ws_id: String,
     message: String,
-) -> Result<Message, DbError> {
+) -> Result<Option<Message>, DbError> {
     use crate::schema::messages::dsl::*;
     use crate::schema::room_to_users::dsl::*;
 
-    let current_user = find_user_by_ws(conn, ws_id);
+    let current_user = find_user_by_ws(conn, ws_id)?;
 
-    let current_room = room_to_users
+    match room_to_users
         .filter(user.eq(current_user.id.to_string()))
         .first::<RoomToUser>(conn)
         .optional()?
-        .unwrap();
-
-    let new_message = Message {
-        id: Uuid::new_v4().to_string(),
-        room_id: current_room.room,
-        user_id: current_user.id,
-        content: message,
-        created_at: iso_date(),
-    };
-    diesel::insert_into(messages)
-        .values(&new_message)
-        .execute(conn)?;
-    Ok(new_message)
+    {
+        Some(current_room) => {
+            let new_message = Message {
+                id: Uuid::new_v4().to_string(),
+                room_id: current_room.room,
+                user_id: current_user.id,
+                content: message,
+                created_at: iso_date(),
+            };
+            diesel::insert_into(messages)
+                .values(&new_message)
+                .execute(conn)?;
+            Ok(Some(new_message))
+        }
+        None => return Ok(None),
+    }
 }
 
 pub fn insert_new_move(
     conn: &mut SqliteConnection,
     new_move: NewTicTacToeMove,
-) -> Result<(TicTacToeMove, String), DbError> {
+) -> Result<Option<(TicTacToeMove, String)>, DbError> {
     use crate::schema::tic_tac_toe_moves::dsl::*;
 
     use crate::schema::tic_tac_toe_games::dsl::{
@@ -156,15 +156,19 @@ pub fn insert_new_move(
         column_number: new_move.column_number,
         created_at: iso_date(),
     };
-    diesel::insert_into(tic_tac_toe_moves)
-        .values(&tic_tac_toe_move)
-        .execute(conn)?;
 
     let (p1, p2): (String, Option<String>) = tic_tac_toe_games
         .filter(game_id.eq(new_move.game_id.clone()))
         .select((player_1, player_2))
-        .first(conn)
-        .unwrap();
+        .first(conn)?;
+
+    if p2.is_none() {
+        return Ok(None);
+    }
+
+    diesel::insert_into(tic_tac_toe_moves)
+        .values(&tic_tac_toe_move)
+        .execute(conn)?;
 
     let new_turn = if new_move.player_id == p1 {
         p2.unwrap()
@@ -177,7 +181,7 @@ pub fn insert_new_move(
         .set(turn.eq(new_turn.clone()))
         .execute(conn)?;
 
-    Ok((tic_tac_toe_move, new_turn))
+    Ok(Some((tic_tac_toe_move, new_turn)))
 }
 
 pub fn get_rooms(conn: &mut SqliteConnection) -> Result<Vec<Room>, DbError> {
@@ -233,12 +237,17 @@ pub fn get_rooms_with_users(conn: &mut SqliteConnection) -> Result<Vec<RoomRespo
 pub fn get_current_room_with_users(
     conn: &mut SqliteConnection,
     ws_id: String,
-) -> Result<RoomResponse, DbError> {
+) -> Result<Option<RoomResponse>, DbError> {
     use crate::schema::room_to_users::dsl::*;
     use crate::schema::users;
 
     let users_data: Vec<User> = users::table.get_results(conn)?;
-    let current_room = get_current_room(conn, ws_id).unwrap();
+    let room_option = get_current_room(conn, ws_id)?;
+
+    if room_option.is_none() {
+        return Ok(None);
+    }
+    let current_room = room_option.unwrap();
 
     let rooms_to_user_data: Vec<RoomToUser> = room_to_users
         .filter(room.eq(current_room.id.clone()))
@@ -250,10 +259,12 @@ pub fn get_current_room_with_users(
     };
 
     for r in &rooms_to_user_data {
-        let current_user = users_data.iter().find(|u| u.id == r.user).unwrap();
-        room_response.users.push((*current_user).clone());
+        match users_data.iter().find(|u| u.id == r.user) {
+            Some(current_user) => room_response.users.push((*current_user).clone()),
+            None => {}
+        };
     }
-    Ok(room_response)
+    Ok(Some(room_response))
 }
 
 pub fn get_oponent(
@@ -264,7 +275,7 @@ pub fn get_oponent(
     use crate::schema::tic_tac_toe_games::dsl::*;
     use crate::schema::users::dsl::{id as user_id, users};
 
-    let current_user = find_user_by_ws(conn, ws_id);
+    let current_user = find_user_by_ws(conn, ws_id)?;
 
     let players: Vec<(String, Option<String>)> = tic_tac_toe_games
         .filter(id.eq(game_id.clone()))
@@ -276,7 +287,10 @@ pub fn get_oponent(
     // we want the wsc not the id
     if players.len() > 0 {
         if players[0].0 == current_user.id {
-            let p2 = players[0].1.as_ref().unwrap();
+            let p2 = match players[0].1.as_ref() {
+                Some(player) => player,
+                None => "",
+            };
             let u: Vec<User> = users.filter(user_id.eq(p2)).get_results(conn)?;
             return Ok(u[0].web_socket_session.clone());
         }
@@ -303,8 +317,10 @@ pub fn get_users_in_room(
     let mut current_users = vec![];
 
     for r in &rooms_to_user_data {
-        let current_user = users_data.iter().find(|u| u.id == r.user).unwrap();
-        current_users.push((*current_user).clone());
+        match users_data.iter().find(|u| u.id == r.user) {
+            Some(current_user) => current_users.push((*current_user).clone()),
+            None => {}
+        };
     }
     Ok(current_users)
 }
@@ -384,24 +400,26 @@ pub fn leave_room(
     Ok(())
 }
 
-pub fn get_current_room<'a>(conn: &'a mut SqliteConnection, ws_id: String) -> Option<Room> {
+pub fn get_current_room<'a>(
+    conn: &'a mut SqliteConnection,
+    ws_id: String,
+) -> Result<Option<Room>, DbError> {
     use crate::schema::room_to_users;
     use crate::schema::rooms::dsl::*;
-    let current_user = find_user_by_ws(conn, ws_id);
+    let current_user = find_user_by_ws(conn, ws_id)?;
     let rooms_data: Vec<RoomToUser> = room_to_users::table.get_results(conn).unwrap();
 
     let exists = rooms_data.iter().find(|x| x.user == current_user.id);
 
     if exists.is_none() {
-        return None;
+        return Ok(None);
     }
     let r = exists.unwrap();
-    Some(
+    Ok(Some(
         rooms
             .filter(id.eq((r.room).to_string()))
-            .first::<Room>(conn)
-            .unwrap(),
-    )
+            .first::<Room>(conn)?,
+    ))
 }
 
 pub fn create_tic_tac_toe<'a>(
@@ -410,7 +428,7 @@ pub fn create_tic_tac_toe<'a>(
 ) -> Result<TicTacToeGame, DbError> {
     use crate::schema::tic_tac_toe_games::dsl::*;
 
-    let current_user = find_user_by_ws(conn, ws_id);
+    let current_user = find_user_by_ws(conn, ws_id)?;
 
     let new_game_id = Uuid::new_v4().to_string();
     let new_game = TicTacToeGame {

@@ -113,21 +113,35 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             display_message.content,
                         );
                         let msg = serde_json::to_string(input).unwrap();
-                        let current_room =
-                            db::get_current_room(&mut conn, self.id.to_string()).unwrap();
-                        self.addr.do_send(server::ClientMessage {
-                            id: self.id,
-                            msg,
-                            room: Some(current_room.id),
-                            game: None,
-                        })
+                        let result = db::get_current_room(&mut conn, self.id.to_string());
+
+                        match result {
+                            Ok(option) => match option {
+                                Some(current_room) => {
+                                    self.addr.do_send(server::ClientMessage {
+                                        id: self.id,
+                                        msg,
+                                        room: Some(current_room.id),
+                                        game: None,
+                                    });
+                                }
+                                None => return,
+                            },
+                            Err(_) => return,
+                        }
                     }
                     ChatType::JOIN => {
                         let mut conn = self.db_pool.get().unwrap();
-                        let current_room = db::get_current_room(&mut conn, self.id.to_string());
+                        let room_result = db::get_current_room(&mut conn, self.id.to_string());
 
-                        let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
+                        let user_result = db::find_user_by_ws(&mut conn, self.id.to_string());
 
+                        if user_result.is_err() || room_result.is_err() {
+                            //we should send a message to the user to retry or something?
+                            return;
+                        }
+                        let current_user = user_result.unwrap();
+                        let current_room = room_result.unwrap();
                         match current_room {
                             Some(r) => {
                                 if r.id == input.value {
@@ -192,8 +206,13 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         let mut conn = self.db_pool.get().unwrap();
                         let new_game =
                             db::create_tic_tac_toe(&mut conn, self.id.to_string()).unwrap();
-                        println!("ws id: {}", self.id.to_string());
-                        let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
+
+                        let user_result = db::find_user_by_ws(&mut conn, self.id.to_string());
+                        if user_result.is_err() {
+                            return;
+                        }
+                        let current_user = user_result.unwrap();
+
                         let chat_msg = ChatMessage {
                             chat_type: ChatType::CREATEGAME,
                             value: serde_json::to_string(&new_game).unwrap(),
@@ -201,43 +220,54 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         };
 
                         let msg = serde_json::to_string(&chat_msg).unwrap();
-                        let current_room =
-                            db::get_current_room(&mut conn, self.id.to_string()).unwrap();
-                        self.addr.do_send(server::ClientMessage {
-                            id: 0, //sends it to yourself as well
-                            msg,
-                            room: Some(current_room.id),
-                            game: None,
-                        })
+
+                        match db::get_current_room(&mut conn, self.id.to_string()) {
+                            Ok(option) => match option {
+                                Some(room) => self.addr.do_send(server::ClientMessage {
+                                    id: 0, //sends it to yourself as well
+                                    msg,
+                                    room: Some(room.id),
+                                    game: None,
+                                }),
+                                None => return,
+                            },
+                            Err(_) => return,
+                        }
                     }
                     ChatType::JOINGAME => {
                         let mut conn = self.db_pool.get().unwrap();
 
-                        let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
+                        match db::find_user_by_ws(&mut conn, self.id.to_string()) {
+                            Ok(current_user) => {
+                                let _ = db::join_game(&mut conn, &input.value, &current_user.id);
 
-                        let _ = db::join_game(&mut conn, &input.value, &current_user.id);
-
-                        let chat_msg = ChatMessage {
-                            chat_type: ChatType::JOINGAME,
-                            value: input.value.clone(),
-                            user_id: current_user.id,
-                        };
-                        self.addr.do_send(server::ClientMessage {
-                            id: self.id,
-                            msg: serde_json::to_string(&chat_msg).unwrap(),
-                            room: None,
-                            game: Some(input.value.clone()),
-                        })
+                                let chat_msg = ChatMessage {
+                                    chat_type: ChatType::JOINGAME,
+                                    value: input.value.clone(),
+                                    user_id: current_user.id,
+                                };
+                                self.addr.do_send(server::ClientMessage {
+                                    id: self.id,
+                                    msg: serde_json::to_string(&chat_msg).unwrap(),
+                                    room: None,
+                                    game: Some(input.value.clone()),
+                                })
+                            }
+                            Err(_) => return,
+                        }
                     }
                     ChatType::MOVE => {
-                        println!("MOVE!");
                         let input = data_json.as_ref().unwrap();
 
                         let mut conn = self.db_pool.get().unwrap();
-                        let current_user = db::find_user_by_ws(&mut conn, self.id.to_string());
+                        let user_result = db::find_user_by_ws(&mut conn, self.id.to_string());
                         let new_move =
                             serde_json::from_str::<NewTicTacToeMove>(&input.value).unwrap();
 
+                        if user_result.is_err() {
+                            return;
+                        }
+                        let current_user = user_result.unwrap();
                         //verify that  is your turn
                         let your_turn = db::your_turn(
                             &mut conn,
@@ -265,8 +295,15 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                             return;
                         }
 
-                        let (last_move, whos_turn) =
-                            db::insert_new_move(&mut conn, new_move.clone()).unwrap();
+                        let move_result = db::insert_new_move(&mut conn, new_move.clone());
+                        if move_result.is_err() {
+                            return;
+                        }
+                        let move_option = move_result.unwrap();
+                        if move_option.is_none() {
+                            return;
+                        }
+                        let (last_move, whos_turn) = move_option.unwrap();
 
                         //check if the game is over
 

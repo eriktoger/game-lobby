@@ -1,5 +1,5 @@
 use crate::{
-    db,
+    db::{self, DbError},
     models::{Room, User},
     session::{self},
 };
@@ -134,12 +134,17 @@ impl Handler<Connect> for ChatServer {
 fn get_user_and_room(
     pool: &mut Pool<ConnectionManager<SqliteConnection>>,
     ws_id: String,
-) -> (Room, User) {
-    let mut conn = pool.get().unwrap();
-    let current_room = db::get_current_room(&mut conn, ws_id.clone()).unwrap();
-    let current_user = db::find_user_by_ws(&mut conn, ws_id);
-    let _ = db::leave_room(&mut conn, &current_room.id, &current_user.id);
-    (current_room, current_user)
+) -> Result<Option<(Room, User)>, DbError> {
+    let mut conn = pool.get()?;
+    let option_room = db::get_current_room(&mut conn, ws_id.clone())?;
+    if option_room.is_none() {
+        return Ok(None);
+    }
+
+    let current_room = option_room.unwrap();
+    let current_user = db::find_user_by_ws(&mut conn, ws_id)?;
+    let _ = db::leave_room(&mut conn, &current_room.id, &current_user.id)?;
+    Ok(Some((current_room, current_user)))
 }
 impl Handler<Disconnect> for ChatServer {
     type Result = ();
@@ -156,18 +161,24 @@ impl Handler<Disconnect> for ChatServer {
         //and you should leave the room ()
 
         //we also need to send it to the game if the user disconnects.
-        let (current_room, current_user) = get_user_and_room(&mut self.pool, msg.id.to_string());
-
-        self.send_message_to_room(
-            &current_room.id,
-            &json!({
-                "room": current_room.name,
-                "value": current_user.username,
-                "chat_type": session::ChatType::DISCONNECT
-            })
-            .to_string(),
-            0,
-        );
+        match get_user_and_room(&mut self.pool, msg.id.to_string()) {
+            Ok(option) => match option {
+                Some((current_room, current_user)) => {
+                    self.send_message_to_room(
+                        &current_room.id,
+                        &json!({
+                            "room": current_room.name,
+                            "value": current_user.username,
+                            "chat_type": session::ChatType::DISCONNECT
+                        })
+                        .to_string(),
+                        0,
+                    );
+                }
+                None => return,
+            },
+            Err(_) => return,
+        }
     }
 }
 //Can I have a handler each for games and chat?
