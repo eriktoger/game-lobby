@@ -361,7 +361,7 @@ pub fn join_room(
         user: user_id.to_string(),
     };
     match exists {
-        Some(_) => println!("{:?}", exists),
+        Some(_) => {}
         None => {
             diesel::insert_into(room_to_users)
                 .values(&new_room_to_user)
