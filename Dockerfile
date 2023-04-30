@@ -19,7 +19,7 @@ WORKDIR /app
 
 COPY ./ .
 
-WORKDIR /app/backend
+WORKDIR /app/src
 
 RUN cargo build --release
 
@@ -27,7 +27,7 @@ RUN cargo install diesel_cli
 
 RUN touch chat.db
 
-RUN diesel migration run
+RUN diesel setup --database-url="chat.db"
 
 ENV PORT=8000
 
