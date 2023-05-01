@@ -1,9 +1,8 @@
 import { useState } from "react";
 import styled from "styled-components";
 
-const base = "game-lobby-plzu.onrender.com"; //localhost:8000
-export const wsUri = `ws:${base}/ws`;
-export const baseUrl = `https://${base}`; // no s in localhost
+export const wsUri = process.env.NEXT_PUBLIC_WS_URI;
+export const baseUrl = process.env.NEXT_PUBLIC_API_URL;
 
 async function createAccount({
   username,

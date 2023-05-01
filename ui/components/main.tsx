@@ -169,7 +169,6 @@ export default function Main({ auth, setAuthUser }: any) {
           }
           case "MOVE": {
             const info = JSON.parse(messageData.value) as TicTacToeInfo;
-            console.log("MOVE", info);
             setTurn(info.turn);
             setGameStatus(info.game_status);
             setMoves((prev) => [...prev, info.last_move]);
