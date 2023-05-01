@@ -20,9 +20,12 @@ async function createAccount({
       },
       body: JSON.stringify({ username, phone }),
     });
-    return result.json();
+    if (result.ok) {
+      const user = await result.json();
+      return user;
+    }
   } catch (e) {
-    return Promise.reject(e);
+    console.error(e);
   }
 }
 
@@ -88,7 +91,7 @@ export default function Login({ setAuth }: any) {
         return;
       }
       let res = await createAccount({ username, phone });
-      if (res === null) {
+      if (res == null) {
         alert("Failed to create account");
         return;
       }
