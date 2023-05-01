@@ -14,7 +14,6 @@ RUN apt-get update -qq && \
 
 RUN update-ca-certificates
 
-
 WORKDIR /app
 
 COPY ./ .
@@ -24,8 +23,6 @@ WORKDIR /app/src
 RUN cargo build --release
 
 RUN cargo install diesel_cli
-
-RUN touch chat.db
 
 RUN diesel setup --database-url="chat.db"
 
