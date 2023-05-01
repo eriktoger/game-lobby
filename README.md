@@ -15,7 +15,7 @@ I have used [this article](https://blog.logrocket.com/real-time-chat-app-rust-re
 
 The backend is deployed at Render through a Docker file.
 
-The frontent is deployed at [Netlify](https://game-lobby-ttc.netlify.app/)
+The frontend is deployed at [Netlify](https://game-lobby-ttc.netlify.app/), and on [Render](https://game-lobby-ui.onrender.com//).
 
 The frontend can be built by: $cd ui && npm run build
 
