@@ -3,3 +3,6 @@
 chat.db
 .env.development
 /static
+
+# Local Netlify folder
+.netlify
