@@ -1,18 +1,7 @@
 import React, { useState, useEffect, SetStateAction, Dispatch } from "react";
 import styled from "styled-components";
 import { ChatMessage, DisplayGame, Room, User } from "./types";
-import { baseUrl } from "./login";
-
-async function getRooms() {
-  try {
-    const url = `${baseUrl}/rooms`;
-    let result = await fetch(url);
-    return result.json();
-  } catch (e) {
-    console.log(e);
-    return Promise.resolve(null);
-  }
-}
+import { getRooms } from "api";
 
 const StyledItem = styled.h3<{ selected: boolean }>`
   padding: 0.2rem 0;

@@ -14,7 +14,7 @@ import {
 } from "./types";
 import { Board } from "./games/TicTacToe/board";
 import styled from "styled-components";
-import { baseUrl } from "./login";
+import { ConnectSessionId } from "api";
 
 const StyledMain = styled.main`
   display: flex;
@@ -108,19 +108,7 @@ export default function Main({ auth, setAuthUser }: any) {
             break;
           }
           case "CONNECT": {
-            auth?.id &&
-              fetch(
-                `${baseUrl}/users/${auth.id}/session/${messageData.value}`,
-                {
-                  method: "POST",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                }
-              );
-            //use this data to update the user and give it the websocket-id
-            //so that you can use it to send messages when we only have the user_id
-            //But it still seems to be a work around.
+            auth?.id && ConnectSessionId(auth.id, messageData.value);
             break;
           }
 

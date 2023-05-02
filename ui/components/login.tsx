@@ -1,45 +1,6 @@
 import { useState } from "react";
 import styled from "styled-components";
-
-export const wsUri = process.env.NEXT_PUBLIC_WS_URI;
-export const baseUrl = process.env.NEXT_PUBLIC_API_URL;
-
-async function createAccount({
-  username,
-  phone,
-}: {
-  username: string;
-  phone: string;
-}) {
-  try {
-    const url = `${baseUrl}/users/create`;
-    let result = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ username, phone }),
-    });
-    if (result.ok) {
-      const user = await result.json();
-      return user;
-    }
-  } catch (e) {
-    console.error(e);
-  }
-}
-
-async function signIn({ phone }: { phone: string }) {
-  try {
-    const url = `${baseUrl}/users/phone/${phone}`;
-    let response = await fetch(url);
-    let result = await response.json();
-    return result;
-  } catch (e) {
-    console.error(e);
-    return;
-  }
-}
+import { createAccount, signIn } from "api";
 
 const StyledForm = styled.form`
   display: flex;

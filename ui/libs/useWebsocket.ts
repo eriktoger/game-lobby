@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { wsUri } from "../components/login";
+const wsUri = process.env.NEXT_PUBLIC_WS_URI;
+
 export default function useWebsocket(onMessage: any) {
   const ws = useRef<any>(null);
   useEffect(() => {

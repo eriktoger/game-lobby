@@ -6,18 +6,7 @@ import {
   TicTacToeGame,
   User,
 } from "../components/types";
-import { baseUrl } from "../components/login";
-
-const fetchRoom = async (room_id: string) => {
-  const url = `${baseUrl}/rooms/${room_id}/data`;
-  try {
-    const resp = fetch(url).then((res) => res.json());
-
-    return resp;
-  } catch (e) {
-    console.log(e);
-  }
-};
+import { getRoom } from "api";
 
 //maybe should be a context, since the websocket will update it
 //then let current game be its own context?
@@ -29,7 +18,7 @@ export default function useRooms() {
 
   const fetchRoomData = async (room_id: string, user: User) => {
     setIsLoading(true);
-    const data = await fetchRoom(room_id);
+    const data = await getRoom(room_id);
     setUsers([...data.users, user]);
     setMessages(data.messages);
     setIsLoading(false);
