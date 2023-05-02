@@ -16,7 +16,7 @@ mod server;
 mod session;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let conn_spec = "chat.db";
+    let conn_spec = "src/chat.db";
     let manager = ConnectionManager::<SqliteConnection>::new(conn_spec);
     let pool = r2d2::Pool::builder()
         .max_size(1) // https://stackoverflow.com/questions/57123453/how-to-use-diesel-with-sqlite-connections-and-avoid-database-is-locked-type-of
