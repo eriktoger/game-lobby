@@ -4,6 +4,7 @@ import Login from "../components/login";
 import useLocalStorage from "../libs/useLocalStorage";
 import Main from "../components/main";
 import styled from "styled-components";
+import { ToastContainer } from "react-toastify";
 
 const StyledContainer = styled.div`
   height: 100vh;
@@ -24,6 +25,7 @@ export default function Home() {
       </Head>
       {!auth && <Login setAuth={setAuthUser} />}
       {auth && <Main auth={auth} setAuthUser={setAuthUser} />}
+      <ToastContainer />
     </StyledContainer>
   );
 }

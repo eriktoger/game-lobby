@@ -3,10 +3,12 @@ import {
   DisplayGame,
   DisplayMessage,
   Message,
+  Room,
   TicTacToeGame,
   User,
 } from "../components/types";
 import { getRoom } from "api";
+import { showErrorToast } from "toast";
 
 //maybe should be a context, since the websocket will update it
 //then let current game be its own context?
@@ -16,11 +18,11 @@ export default function useRooms() {
   const [users, setUsers] = useState<User[]>([]);
   const [games, setGames] = useState<DisplayGame[]>([]);
 
-  const fetchRoomData = async (room_id: string, user: User) => {
+  const fetchRoomData = async (room: Room, user: User) => {
     setIsLoading(true);
-    const data = await getRoom(room_id);
+    const data = await getRoom(room.id);
     if (!data) {
-      //should have some toaster system
+      showErrorToast(`${room.name} not loaded`);
       return;
     }
     setUsers([...data.users, user]);

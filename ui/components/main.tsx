@@ -198,8 +198,7 @@ export default function Main({ auth, setAuthUser }: any) {
   };
 
   const onChangeRoom = async (room: Room) => {
-    if (!room.id) return;
-    await fetchRoomData(room.id, auth);
+    await fetchRoomData(room, auth);
     setSelectedRoom(room);
 
     const joinRoom = {
@@ -235,7 +234,7 @@ export default function Main({ auth, setAuthUser }: any) {
       <Board
         onClose={() => {
           setGameId(null);
-          fetchRoomData(room.id, auth);
+          fetchRoomData(room, auth);
         }}
         submitMove={submitMove}
         gameId={gameId}
