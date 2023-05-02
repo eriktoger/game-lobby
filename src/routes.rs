@@ -25,8 +25,8 @@ pub async fn chat_server(
     stream: web::Payload,
     pool: web::Data<DbPool>,
     srv: web::Data<Addr<server::ChatServer>>,
-) -> Result<HttpResponse, Error> {
-    ws::start(
+) -> HttpResponse {
+    match ws::start(
         session::WsChatSession {
             id: 0,
             hb: Instant::now(),
@@ -37,11 +37,13 @@ pub async fn chat_server(
         },
         &req,
         stream,
-    )
+    ) {
+        Ok(response) => response,
+        Err(_) => HttpResponse::InternalServerError().into(),
+    }
 }
 
-#[post("/users/create")]
-pub async fn create_user(
+pub async fn create_user_wrapper(
     pool: web::Data<DbPool>,
     form: web::Json<models::NewUser>,
 ) -> Result<HttpResponse, Error> {
@@ -53,6 +55,18 @@ pub async fn create_user(
     .map_err(actix_web::error::ErrorUnprocessableEntity)?;
     Ok(HttpResponse::Ok().json(user))
 }
+
+#[post("/users/create")]
+pub async fn create_user(
+    pool: web::Data<DbPool>,
+    form: web::Json<models::NewUser>,
+) -> HttpResponse {
+    match create_user_wrapper(pool, form).await {
+        Ok(response) => response,
+        Err(_) => HttpResponse::InternalServerError().into(),
+    }
+}
+
 #[get("/users/{user_id}")]
 pub async fn get_user_by_id(
     pool: web::Data<DbPool>,
@@ -105,8 +119,8 @@ pub async fn get_data_from_room(
     };
     Ok(HttpResponse::Ok().json(room_response))
 }
-#[get("/users/phone/{user_phone}")]
-pub async fn get_user_by_phone(
+
+pub async fn get_user_by_phone_wrapper(
     pool: web::Data<DbPool>,
     phone: web::Path<String>,
 ) -> Result<HttpResponse, Error> {
@@ -128,6 +142,14 @@ pub async fn get_user_by_phone(
             .to_string(),
         );
         Ok(res)
+    }
+}
+
+#[get("/users/phone/{user_phone}")]
+pub async fn get_user_by_phone(pool: web::Data<DbPool>, phone: web::Path<String>) -> HttpResponse {
+    match get_user_by_phone_wrapper(pool, phone).await {
+        Ok(ok) => ok,
+        Err(_) => HttpResponse::InternalServerError().into(),
     }
 }
 
@@ -185,18 +207,3 @@ pub async fn join_room(
     .map_err(actix_web::error::ErrorUnprocessableEntity)?;
     Ok(HttpResponse::Ok().json(joined))
 }
-
-//this sould be a web-socket thing instead
-// #[post("/games/tic_tac_toe")]
-// pub async fn create_tic_tac_toe(
-//     pool: web::Data<DbPool>,
-//     form: web::Json<models::NewRoomToUser>,
-// ) -> Result<HttpResponse, Error> {
-//     let joined = web::block(move || {
-//         let mut conn = pool.get()?;
-//         db::create_tic_tac_toe(&mut conn, &form.room, &form.user)
-//     })
-//     .await?
-//     .map_err(actix_web::error::ErrorUnprocessableEntity)?;
-//     Ok(HttpResponse::Ok().json(joined))
-// }

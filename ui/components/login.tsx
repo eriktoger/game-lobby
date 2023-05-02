@@ -32,10 +32,12 @@ async function createAccount({
 async function signIn({ phone }: { phone: string }) {
   try {
     const url = `${baseUrl}/users/phone/${phone}`;
-    let result = await fetch(url);
-    return result.json();
+    let response = await fetch(url);
+    let result = await response.json();
+    return result;
   } catch (e) {
-    return Promise.reject(e);
+    console.error(e);
+    return;
   }
 }
 
@@ -128,6 +130,7 @@ export default function Login({ setAuth }: any) {
   };
 
   const FormSignIn = ({ setAuth }: any) => {
+    const [error, setError] = useState("");
     const onSignIn = async (e: any) => {
       e.preventDefault();
       let phone = e.target.phone.value;
@@ -136,11 +139,11 @@ export default function Login({ setAuth }: any) {
       }
       let res = await signIn({ phone });
       if (res === null) {
-        alert("Failed to create account");
+        setError("Failed to create account");
         return;
       }
-      if (!res.id) {
-        alert(`Phone number not found ${phone}`);
+      if (res.error === 404) {
+        setError(res.message);
         return;
       }
       setAuth(res);
@@ -155,6 +158,7 @@ export default function Login({ setAuth }: any) {
           <div>
             <button type="submit">Submit</button>
           </div>
+          {error && <div>Error:{error}</div>}
         </StyledForm>
         <div>
           <p>
