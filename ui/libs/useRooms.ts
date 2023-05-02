@@ -19,6 +19,10 @@ export default function useRooms() {
   const fetchRoomData = async (room_id: string, user: User) => {
     setIsLoading(true);
     const data = await getRoom(room_id);
+    if (!data) {
+      //should have some toaster system
+      return;
+    }
     setUsers([...data.users, user]);
     setMessages(data.messages);
     setIsLoading(false);

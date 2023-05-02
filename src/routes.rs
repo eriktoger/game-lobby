@@ -92,8 +92,8 @@ pub async fn get_user_by_id(
         Ok(res)
     }
 }
-#[get("/rooms/{uid}/data")]
-pub async fn get_data_from_room(
+
+pub async fn get_data_from_room_wrapper(
     pool: web::Data<DbPool>,
     uid: web::Path<Uuid>,
 ) -> Result<HttpResponse, Error> {
@@ -118,6 +118,14 @@ pub async fn get_data_from_room(
         games,
     };
     Ok(HttpResponse::Ok().json(room_response))
+}
+
+#[get("/rooms/{uid}/data")]
+pub async fn get_data_from_room(pool: web::Data<DbPool>, uid: web::Path<Uuid>) -> HttpResponse {
+    match get_data_from_room_wrapper(pool, uid).await {
+        Ok(response) => response,
+        Err(_) => HttpResponse::InternalServerError().into(),
+    }
 }
 
 pub async fn get_user_by_phone_wrapper(
