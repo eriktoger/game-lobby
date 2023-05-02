@@ -18,8 +18,6 @@ WORKDIR /app
 
 COPY ./ .
 
-WORKDIR /app/src
-
 RUN cargo build --release
 
 RUN cargo install diesel_cli
