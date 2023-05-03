@@ -49,10 +49,10 @@ export default function Conversation({
 }) {
   const ref = useRef<any>(null);
   useEffect(() => {
-    ref.current?.scrollTo(0, ref.current.scrollHeight);
+    setTimeout(ref.current?.scrollIntoView(), 50);
   }, [data]);
   return (
-    <div ref={ref}>
+    <div>
       {data.map((item, i) => {
         return (
           <ConversationItem
@@ -63,6 +63,7 @@ export default function Conversation({
           />
         );
       })}
+      <span ref={ref} />
     </div>
   );
 }
