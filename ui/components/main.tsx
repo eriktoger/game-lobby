@@ -171,7 +171,7 @@ export default function Main({ auth, setAuthUser }: any) {
   const submitMessage = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    const messageInput = e.target.elements.namedItem(
+    const messageInput = (e.target as HTMLFormElement).elements.namedItem(
       "message"
     ) as HTMLInputElement;
 
