@@ -8,7 +8,7 @@ I have used [this article](https://blog.logrocket.com/real-time-chat-app-rust-re
 
 # Starting:
 
-- cargo run
+- cargo run # or cargo watch -x run
 - cd ui && npm run dev
 
 # Deployment
