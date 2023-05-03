@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { FormEvent, useCallback, useState } from "react";
 import ChatList, { Games } from "../components/rooms";
 import Conversation from "../components/conversation";
 import useRooms from "../libs/useRooms";
@@ -97,74 +97,70 @@ export default function Main({ auth, setAuthUser }: any) {
   );
 
   const onMessage = useCallback(
-    async (data: any) => {
-      try {
-        let messageData = JSON.parse(data) as ChatMessage;
-        switch (messageData.chat_type) {
-          case "TEXT": {
-            //should be in try catch or something...
-            const { content, username } = JSON.parse(messageData.value);
-            handleMessage(content, username);
-            break;
-          }
-          case "CONNECT": {
-            auth?.id && ConnectSessionId(auth.id, messageData.value);
-            break;
-          }
-
-          case "JOIN": {
-            const user = JSON.parse(messageData.value) as User;
-            setUsers((prev: any[]) => [...prev, user]);
-            break;
-          }
-          case "DISCONNECT":
-          case "LEAVE": {
-            setUsers((prev: any[]) => {
-              const newArray = [
-                ...prev.filter((user) => user.username !== messageData.value),
-              ];
-
-              return newArray;
-            });
-            break;
-          }
-          case "CREATEGAME": {
-            const game = JSON.parse(messageData.value) as TicTacToeGame; // should be Display game from backend
-            if (messageData.user_id == auth.id) {
-              setGameId(game.id);
-            } else {
-              //add it to games array
-              //this should be loaded when you enter the room as well
-              setGames((prev) => [
-                ...prev,
-                {
-                  ...game,
-                  player_1_name:
-                    users.find((user) => user.id === game.player_1)?.username ??
-                    null,
-                  player_2_name:
-                    users.find((user) => user.id === game.player_2)?.username ??
-                    null,
-                } as TicTacToeGame,
-              ]);
-            }
-            break;
-          }
-          case "JOINGAME": {
-            // Player 2 starts
-            setTurn(messageData.user_id);
-            break;
-          }
-          case "MOVE": {
-            const info = JSON.parse(messageData.value) as TicTacToeInfo;
-            setTurn(info.turn);
-            setGameStatus(info.game_status);
-            setMoves((prev) => [...prev, info.last_move]);
-            break;
-          }
+    async (chatMessage: ChatMessage) => {
+      const { chat_type, value, user_id } = chatMessage;
+      switch (chat_type) {
+        case "TEXT": {
+          //should be in try catch or something...
+          const { content, username } = JSON.parse(value);
+          handleMessage(content, username);
+          break;
         }
-      } catch (e) {
-        console.log(e);
+        case "CONNECT": {
+          auth?.id && ConnectSessionId(auth.id, value);
+          break;
+        }
+
+        case "JOIN": {
+          const user = JSON.parse(value) as User;
+          setUsers((prev: User[]) => [...prev, user]);
+          break;
+        }
+        case "DISCONNECT":
+        case "LEAVE": {
+          setUsers((prev: any[]) => {
+            const newArray = [
+              ...prev.filter((user) => user.username !== value),
+            ];
+
+            return newArray;
+          });
+          break;
+        }
+        case "CREATEGAME": {
+          const game = JSON.parse(value) as TicTacToeGame; // should be Display game from backend
+          if (user_id == auth.id) {
+            setGameId(game.id);
+          } else {
+            //add it to games array
+            //this should be loaded when you enter the room as well
+            setGames((prev) => [
+              ...prev,
+              {
+                ...game,
+                player_1_name:
+                  users.find((user) => user.id === game.player_1)?.username ??
+                  null,
+                player_2_name:
+                  users.find((user) => user.id === game.player_2)?.username ??
+                  null,
+              } as TicTacToeGame,
+            ]);
+          }
+          break;
+        }
+        case "JOINGAME": {
+          // Player 2 starts
+          setTurn(user_id);
+          break;
+        }
+        case "MOVE": {
+          const info = JSON.parse(value) as TicTacToeInfo;
+          setTurn(info.turn);
+          setGameStatus(info.game_status);
+          setMoves((prev) => [...prev, info.last_move]);
+          break;
+        }
       }
     },
     [auth.id, handleMessage, setGames, setUsers, users]
@@ -172,10 +168,14 @@ export default function Main({ auth, setAuthUser }: any) {
 
   const sendMessage = useWebsocket(onMessage);
 
-  const submitMessage = (e: any) => {
+  const submitMessage = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    let message = e.target.message.value;
-    if (message === "") {
+
+    const messageInput = e.target.elements.namedItem(
+      "message"
+    ) as HTMLInputElement;
+
+    if (messageInput.value === "") {
       return;
     }
 
@@ -184,7 +184,7 @@ export default function Main({ auth, setAuthUser }: any) {
       return;
     }
     const displayMessage = {
-      content: message,
+      content: messageInput.value,
       username: auth.username,
     };
     const data: ChatMessage = {
@@ -192,9 +192,10 @@ export default function Main({ auth, setAuthUser }: any) {
       value: JSON.stringify(displayMessage),
       user_id: auth.id,
     };
-    sendMessage(JSON.stringify(data));
-    e.target.message.value = "";
-    handleMessage(message, auth.username);
+    sendMessage(data);
+
+    handleMessage(messageInput.value, auth.username);
+    messageInput.value = "";
   };
 
   const onChangeRoom = async (room: Room) => {
@@ -205,8 +206,8 @@ export default function Main({ auth, setAuthUser }: any) {
       chat_type: "JOIN",
       value: room.id,
       user_id: auth?.id,
-    };
-    sendMessage(JSON.stringify(joinRoom));
+    } as const;
+    sendMessage(joinRoom);
   };
 
   const submitMove = (row: number, column: number) => {
@@ -220,13 +221,13 @@ export default function Main({ auth, setAuthUser }: any) {
       column_number: column,
       player_id: auth.id,
     };
-    const data: ChatMessage = {
+    const data = {
       chat_type: "MOVE",
       value: JSON.stringify(move),
       user_id: auth.id,
-    };
+    } as const;
     //setMoves((prev) => [...prev, move]);
-    sendMessage(JSON.stringify(data));
+    sendMessage(data);
   };
 
   if (gameId) {
@@ -264,30 +265,34 @@ export default function Main({ auth, setAuthUser }: any) {
           users={users}
           currentRoom={room}
         />
-        <Games
-          games={games}
-          auth={auth}
-          sendMessage={sendMessage}
-          setGameId={setGameId}
-          setAuthUser={setAuthUser}
-        />
-      </StyledInfo>
-      <StyledMessageContainer>
         {room?.id && (
-          <>
-            {isLoading && room.id && <p>Loading conversation...</p>}
-            <Conversation data={messages} auth={auth} />
-          </>
+          <Games
+            games={games}
+            auth={auth}
+            sendMessage={sendMessage}
+            setGameId={setGameId}
+            setAuthUser={setAuthUser}
+          />
         )}
-      </StyledMessageContainer>
-      <div>
-        <form onSubmit={submitMessage}>
-          <input name="message" placeholder="Type your message here..." />
-          <button type="submit" disabled={isLoading}>
-            Send
-          </button>
-        </form>
-      </div>
+      </StyledInfo>
+      {room?.id && (
+        <>
+          <StyledMessageContainer>
+            <>
+              {isLoading && room.id && <p>Loading conversation...</p>}
+              <Conversation data={messages} auth={auth} />
+            </>
+          </StyledMessageContainer>
+          <div>
+            <form onSubmit={submitMessage}>
+              <input name="message" placeholder="Type your message here..." />
+              <button type="submit" disabled={isLoading && false}>
+                Send
+              </button>
+            </form>
+          </div>
+        </>
+      )}
     </StyledMain>
   );
 }

@@ -55,16 +55,23 @@ export default function ChatList({
   const [isLoading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (rooms.length) {
+      return;
+    }
     setLoading(true);
     getRooms().then((data) => {
       setRooms(data);
+
+      const generalRoom = data.find((room) => room.name === "General Chat");
+      if (!currentRoom && currentRoom?.id !== generalRoom?.id) {
+        onChangeRoom(generalRoom);
+      }
       setLoading(false);
     });
-  }, []);
+  }, [currentRoom, onChangeRoom, rooms.length]);
 
   return (
     <aside>
-      {isLoading && <p>Loading chat lists.</p>}
       {rooms?.map((room) => {
         return (
           <ChatListItem
