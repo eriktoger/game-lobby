@@ -84,6 +84,14 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
             }
             Ok(msg) => msg,
         };
+
+        let conn = self.db_pool.get();
+        if conn.is_err() {
+            // handle this somehow
+            return;
+        }
+        let mut conn = conn.unwrap();
+
         match msg {
             ws::Message::Ping(msg) => {
                 self.hb = Instant::now();
@@ -104,7 +112,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                     ChatType::TEXT => {
                         let input = data_json.as_ref().unwrap();
 
-                        let mut conn = self.db_pool.get().unwrap();
                         let display_message =
                             serde_json::from_str::<DisplayMessage>(&input.value).unwrap();
                         let _ = db::insert_new_message(
@@ -131,7 +138,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         }
                     }
                     ChatType::JOIN => {
-                        let mut conn = self.db_pool.get().unwrap();
                         let room_result = db::get_current_room(&mut conn, self.id.to_string());
 
                         let user_result = db::find_user_by_ws(&mut conn, self.id.to_string());
@@ -203,9 +209,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         //we may use the fact that it is a tic-tac-toe -game later
                         //let input = data_json.as_ref().unwrap();
 
-                        let mut conn = self.db_pool.get().unwrap();
-                        let new_game =
-                            db::create_tic_tac_toe(&mut conn, self.id.to_string()).unwrap();
+                        let new_game = match input.value.as_str() {
+                            "tic_tac_toe" => {
+                                db::create_tic_tac_toe(&mut conn, self.id.to_string()).unwrap()
+                            }
+                            _ => panic!("Game not implemented!"),
+                        };
 
                         let user_result = db::find_user_by_ws(&mut conn, self.id.to_string());
                         if user_result.is_err() {
@@ -235,8 +244,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                         }
                     }
                     ChatType::JOINGAME => {
-                        let mut conn = self.db_pool.get().unwrap();
-
                         match db::find_user_by_ws(&mut conn, self.id.to_string()) {
                             Ok(current_user) => {
                                 let _ = db::join_game(&mut conn, &input.value, &current_user.id);
@@ -259,7 +266,6 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                     ChatType::MOVE => {
                         let input = data_json.as_ref().unwrap();
 
-                        let mut conn = self.db_pool.get().unwrap();
                         let user_result = db::find_user_by_ws(&mut conn, self.id.to_string());
                         let new_move =
                             serde_json::from_str::<NewTicTacToeMove>(&input.value).unwrap();

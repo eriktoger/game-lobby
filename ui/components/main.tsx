@@ -272,6 +272,7 @@ export default function Main({ auth, setAuthUser }: any) {
             sendMessage={sendMessage}
             setGameId={setGameId}
             setAuthUser={setAuthUser}
+            game_name={room.game}
           />
         )}
       </StyledInfo>

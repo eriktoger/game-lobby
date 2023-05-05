@@ -29,6 +29,7 @@ pub struct Room {
     pub id: String,
     pub name: String,
     pub created_at: String,
+    pub game: Option<String>,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NewUser {

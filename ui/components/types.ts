@@ -3,6 +3,7 @@ export type Room = {
   id: string;
   name: string;
   created_at: string;
+  game: string | null;
 };
 
 export type Message = {

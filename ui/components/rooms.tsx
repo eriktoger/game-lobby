@@ -121,24 +121,29 @@ export const Games = ({
   sendMessage,
   setGameId,
   setAuthUser,
+  game_name,
 }: {
   games: DisplayGame[];
   auth: any;
-  sendMessage: (msg: any) => void;
+  sendMessage: (msg: ChatMessage) => void;
   setGameId: Dispatch<SetStateAction<string>>;
   setAuthUser: any;
+  game_name: string | null;
 }) => {
+  if (!game_name) {
+    return;
+  }
   const joinGame = (gameId: string) => {
     if (gameId == null) {
       return;
     }
 
-    const data: ChatMessage = {
+    const joinGame: ChatMessage = {
       chat_type: "JOINGAME",
       value: gameId,
       user_id: auth.id,
     };
-    sendMessage(JSON.stringify(data));
+    sendMessage(joinGame);
   };
 
   return (
@@ -147,10 +152,10 @@ export const Games = ({
         onClick={() => {
           const newGame: ChatMessage = {
             chat_type: "CREATEGAME",
-            value: "Tic_Tac_Toe",
+            value: game_name,
             user_id: auth.id,
           };
-          sendMessage(JSON.stringify(newGame));
+          sendMessage(newGame);
         }}
       >
         Create new game
